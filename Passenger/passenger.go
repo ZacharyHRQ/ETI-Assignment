@@ -100,10 +100,10 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// if r.Method == "DELETE" {
-	// 	w.WriteHeader(http.StatusMethodNotAllowed)
-	// 	w.Write([]byte("Deletion is not allowed"))
-	// }
+	if r.Method == "DELETE" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte("Deletion is not allowed"))
+	}
 
 	if r.Header.Get("Content-type") == "application/json" {
 		// POST is for creating new course
@@ -222,11 +222,8 @@ func main() {
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/passengers", allPassengers).Methods(
 		"GET")
-	// router.HandleFunc("/api/v1/passenger/{passengerid}", passenger).Methods(
-	// 	"GET", "PUT", "POST", "DELETE")
 	router.HandleFunc("/api/v1/passenger/{passengerid}", passenger).Methods(
-		"GET", "PUT", "POST")
-
+		"GET", "PUT", "POST", "DELETE")
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
 

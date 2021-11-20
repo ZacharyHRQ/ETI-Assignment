@@ -192,6 +192,36 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
+	pMap := make(map[string]Driver)
+
+	rows, err := db.Query("SELECT * FROM Driver WHERE DriverStatus=1")
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var person Driver
+		if err := rows.Scan(&person.DriverId, &person.FirstName,
+			&person.LastName, &person.EmailAddress, &person.MoblieNo, &person.CarLicenseNo, &person.DriverStatus); err != nil {
+			return nil, fmt.Errorf("%v", err)
+		}
+		pMap[person.DriverId] = person
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	return pMap, nil
+}
+
+func fetchAvailableDrivers(w http.ResponseWriter, r *http.Request) {
+	fetchedDriverData, _ := getAvailableDrivers(db)
+	fmt.Println(fetchedDriverData)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedDriverData)
+}
+
 var db *sql.DB
 
 func main() {
@@ -220,9 +250,11 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(commonMiddleware) //setting context to "json"
 	router.HandleFunc("/api/v1/", welcome)
-	router.HandleFunc("/api/v1/passengers", allDrivers).Methods(
+	router.HandleFunc("/api/v1/drivers", allDrivers).Methods(
 		"GET")
-	router.HandleFunc("/api/v1/passenger/{driverid}", passenger).Methods(
+	router.HandleFunc("/api/v1/availabledrivers", fetchAvailableDrivers).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/driver/{driverid}", passenger).Methods(
 		"GET", "PUT", "POST", "DELETE")
 
 	fmt.Println("Listening at port 5001")
