@@ -10,7 +10,7 @@
 - [ ] Allow passenger to request for a trip // who the driver will be
 - [ ] Allow driver start or end trip
 - [ ] Allow passenger to fetch all trips he has taken
-- [ ] Create oauth service
+- [ ] Create jwt service
 - [ ] Create frontend
 
 ## Ports used

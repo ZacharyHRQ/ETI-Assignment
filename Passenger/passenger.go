@@ -173,8 +173,6 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 					w.Write([]byte("201 - Course added: " +
 						params["passengerid"]))
 				} else {
-					// update course
-					// to fix-
 					editPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress, newPassenger.PassengerId)
 					w.WriteHeader(http.StatusAccepted)
 					w.Write([]byte("202 - Course updated: " +

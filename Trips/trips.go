@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -12,13 +13,14 @@ import (
 )
 
 type Trip struct {
+	TripId int `json:"tripid"`
+	PassengerId  string `json:"passengerid"`
 	DriverId     string `json:"driverid"`
-	FirstName    string `json:"firstname"`
-	LastName     string `json:"lastname"`
-	MoblieNo     string `json:"moblieno"`
-	EmailAddress string `json:"emailaddress"`
-	CarLicenseNo string `json:"carlicenseno"`
-	DriverStatus int    `json:"driverstatus"` // 1 means available , 0 means unavailable
+	PickUpPostalCode string `json:"pickuppostalcode"`
+	DropOffPostalCode string `json:"dropoffpostalcode"`
+	TripStatus int `json:"tripstatus"`
+	DateOfTrip time.Time `json:"dateoftrip"`
+	
 }
 
 // middleware for setting header to json only
@@ -33,8 +35,34 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1>", "Welcome to Trip's service")
 }
 
-func allTrips(w http.ResponseWriter, r *http.Request) {
+func getTripsById(db *sql.DB, id string) ([]Trip, error) {
+	tArr := make([]Trip)
 
+	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId =%s", id)
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	defer rows.Close()
+
+	for row.Next(){ 
+		var trip Trip
+		if err := rows.Scan(&trip.TripId, &trip.PassengerId, &trip.DriverId, &trip.PickUpPostalCode, &trip.DropOffPostalCode, &trip.TripStatus, &trip.DateOfTrip){ 
+			return nil, fmt.Errorf("%v", err)
+		}
+		append(tArr,trip)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	return tArr , nil
+
+}
+
+func fetchTrips(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	fetchedTripData, _  := getTripsById(db, params["passengerid"])
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedTripData)
 }
 
 var db *sql.DB
@@ -65,7 +93,7 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(commonMiddleware) //setting context to "json"
 	router.HandleFunc("/api/v1/", welcome)
-	router.HandleFunc("/api/v1/drivers", allTrips).Methods(
+	router.HandleFunc("/api/v1/trips/{passengerid}", fetchTrips).Methods(
 		"GET")
 	// router.HandleFunc("/api/v1/availabledrivers", fetchAvailableDrivers).Methods(
 	// 	"GET")

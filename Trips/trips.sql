@@ -4,6 +4,4 @@ CREATE TABLE Trips (TripId int PRIMARY KEY auto_increment, PassengerId int, Driv
 
 INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,DateofTrip) VALUES ("1", "1", "999999","000000", NOW());
 
-
-
 Select * From Trips;
