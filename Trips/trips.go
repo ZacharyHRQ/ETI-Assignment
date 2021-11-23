@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,14 +14,13 @@ import (
 )
 
 type Trip struct {
-	TripId int `json:"tripid"`
-	PassengerId  string `json:"passengerid"`
-	DriverId     string `json:"driverid"`
-	PickUpPostalCode string `json:"pickuppostalcode"`
-	DropOffPostalCode string `json:"dropoffpostalcode"`
-	TripStatus int `json:"tripstatus"`
-	DateOfTrip time.Time `json:"dateoftrip"`
-	
+	TripId            int       `json:"tripid"`
+	PassengerId       string    `json:"passengerid"`
+	DriverId          string    `json:"driverid"`
+	PickUpPostalCode  string    `json:"pickuppostalcode"`
+	DropOffPostalCode string    `json:"dropoffpostalcode"`
+	TripStatus        int       `json:"tripstatus"`
+	DateOfTrip        time.Time `json:"dateoftrip"`
 }
 
 // middleware for setting header to json only
@@ -36,31 +36,43 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTripsById(db *sql.DB, id string) ([]Trip, error) {
-	tArr := make([]Trip)
+	var tArr []Trip
 
-	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId =%s", id)
+	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=?", id)
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
 	defer rows.Close()
 
-	for row.Next(){ 
+	for rows.Next() {
 		var trip Trip
-		if err := rows.Scan(&trip.TripId, &trip.PassengerId, &trip.DriverId, &trip.PickUpPostalCode, &trip.DropOffPostalCode, &trip.TripStatus, &trip.DateOfTrip){ 
+		if err := rows.Scan(&trip.TripId, &trip.PassengerId, &trip.DriverId, &trip.PickUpPostalCode, &trip.DropOffPostalCode, &trip.TripStatus, &trip.DateOfTrip); err != nil {
 			return nil, fmt.Errorf("%v", err)
 		}
-		append(tArr,trip)
+		tArr = append(tArr, trip)
+		fmt.Println(tArr)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
-	return tArr , nil
+
+	return tArr, nil
 
 }
 
 func fetchTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fetchedTripData, _  := getTripsById(db, params["passengerid"])
+	fetchedTripData, _ := getTripsById(db, params["passengerid"])
+	// fmt.Print(fetchedTripData, err)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedTripData)
+}
+
+// request for trip
+
+func requestTrip(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	fetchedTripData, _ := getTripsById(db, params["passengerid"])
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedTripData)
 }
@@ -70,11 +82,12 @@ var db *sql.DB
 func main() {
 	// setting up db connection
 	cfg := mysql.Config{
-		User:   "root",
-		Passwd: "123",
-		Net:    "tcp",
-		Addr:   "127.0.0.1:3306",
-		DBName: "Ridely",
+		User:      "root",
+		Passwd:    "123",
+		Net:       "tcp",
+		Addr:      "127.0.0.1:3306",
+		DBName:    "Ridely",
+		ParseTime: true, // to allow timestamp to parsed into time.Time object
 	}
 	// Get a database handle.
 	var err error
@@ -94,6 +107,8 @@ func main() {
 	router.Use(commonMiddleware) //setting context to "json"
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/trips/{passengerid}", fetchTrips).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/trip/request/{passengerid}", requestTrip).Methods(
 		"GET")
 	// router.HandleFunc("/api/v1/availabledrivers", fetchAvailableDrivers).Methods(
 	// 	"GET")
