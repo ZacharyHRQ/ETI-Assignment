@@ -69,12 +69,68 @@ func fetchTrips(w http.ResponseWriter, r *http.Request) {
 }
 
 // request for trip
+func fetchFirstAvailableDriver() (driverId int, err error) {
+	// get all drivers
+	const baseURL = "http://localhost:5001/api/v1/availabledrivers"
+	resp, err := http.Get(baseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	data,_ := ioutil.ReadAll(resp.Body)
+	var drivers []string
+	json.Unmarshal(data, &drivers)
+	fmt.Println(drivers)
+}
+
+func createTrip(db *sql.DB, tripDetails Trip) (err error) {
+	// insert into db
+	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus) VALUES(?,?,?,?,?)", tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, tripDetails.TripStatus, tripDetails.DateOfTrip)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
 
 func requestTrip(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	fetchedTripData, _ := getTripsById(db, params["passengerid"])
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(fetchedTripData)
+	if r.Header.Get("Content-type") == "application/json" {
+		// POST is for creating new trip
+		if r.Method == "POST" {
+			var newTrip Trip
+			reqBody, err := ioutil.ReadAll(r.Body)
+
+			if err == nil {
+				// convert JSON to object
+				json.Unmarshal(reqBody, &newTrip)
+
+
+				// check if course exists; add only if
+				// course does not exist
+				if _, ok := pMap[params["passengerid"]]; !ok {
+					
+					w.WriteHeader(http.StatusCreated)
+					w.Write([]byte("201 - Course added: " +
+						params["passengerid"]))
+				} else {
+					w.WriteHeader(http.StatusConflict)
+					w.Write([]byte(
+						"409 - Duplicate course ID"))
+				}
+			} else {
+				w.WriteHeader(
+					http.StatusUnprocessableEntity)
+				w.Write([]byte("422 - Please supply course information " +
+					"in JSON format"))
+			}
+		}
 }
 
 var db *sql.DB
@@ -109,11 +165,7 @@ func main() {
 	router.HandleFunc("/api/v1/trips/{passengerid}", fetchTrips).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/trip/request/{passengerid}", requestTrip).Methods(
-		"GET")
-	// router.HandleFunc("/api/v1/availabledrivers", fetchAvailableDrivers).Methods(
-	// 	"GET")
-	// router.HandleFunc("/api/v1/driver/{driverid}", passenger).Methods(
-	// 	"GET", "PUT", "POST", "DELETE")
+		"POST")
 
 	fmt.Println("Listening at port 5002")
 	log.Fatal(http.ListenAndServe(":5002", router))

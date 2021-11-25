@@ -217,9 +217,13 @@ func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
 
 func fetchAvailableDrivers(w http.ResponseWriter, r *http.Request) {
 	fetchedDriverData, _ := getAvailableDrivers(db)
-	fmt.Println(fetchedDriverData)
+	driverIds := make([]string, len(fetchedDriverData))
+	for k := range fetchedDriverData {
+		driverIds = append(driverIds, k)
+	}
+	fmt.Println(len(driverIds))
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(fetchedDriverData)
+	json.NewEncoder(w).Encode(driverIds)
 }
 
 var db *sql.DB
