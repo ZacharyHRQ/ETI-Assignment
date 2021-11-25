@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -69,7 +70,7 @@ func fetchTrips(w http.ResponseWriter, r *http.Request) {
 }
 
 // request for trip
-func fetchFirstAvailableDriver() (driverId int, err error) {
+func fetchFirstAvailableDriver() (driverId string, err error) {
 	// get all drivers
 	const baseURL = "http://localhost:5001/api/v1/availabledrivers"
 	resp, err := http.Get(baseURL)
@@ -77,11 +78,11 @@ func fetchFirstAvailableDriver() (driverId int, err error) {
 		log.Fatal(err)
 	}
 	defer resp.Body.Close()
-	data,_ := ioutil.ReadAll(resp.Body)
+	data, _ := ioutil.ReadAll(resp.Body)
 	var drivers []string
 	json.Unmarshal(data, &drivers)
 	fmt.Println(drivers)
-	return driver[0], nil
+	return drivers[0], nil
 }
 
 func createTrip(db *sql.DB, tripDetails Trip) (err error) {
@@ -89,14 +90,16 @@ func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus) VALUES(?,?,?,?,?)")
 	if err != nil {
 		log.Fatal(err)
+		return err
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, tripDetails.TripStatus)
 	if err != nil {
 		log.Fatal(err)
+		return err
 	}
-
+	return nil
 }
 
 func requestTrip(w http.ResponseWriter, r *http.Request) {
@@ -108,24 +111,15 @@ func requestTrip(w http.ResponseWriter, r *http.Request) {
 			reqBody, err := ioutil.ReadAll(r.Body)
 
 			if err == nil {
-				// convert JSON to object
-				json.Unmarshal(reqBody, &newTrip) 
-				// check if course exists; add only if
-				// course does not exist
-				if _, ok := pMap[params["passengerid"]]; !ok {
-					driverId, _ := fetchFirstAvailableDriver() // get first available driver	
-					newTrip.DriverId = driverId
-					newTrip.PassengerId = params["passengerid"]
-					newTrip.TripStatus = 0
-					createTrip(db, newTrip)
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Course added: " +
-						params["passengerid"]))
-				} else {
-					w.WriteHeader(http.StatusConflict)
-					w.Write([]byte(
-						"409 - Duplicate course ID"))
-				}
+				json.Unmarshal(reqBody, &newTrip)
+				driverId, _ := fetchFirstAvailableDriver() // get first available driver
+				newTrip.DriverId = driverId
+				newTrip.PassengerId = params["passengerid"]
+				newTrip.TripStatus = 0
+				createTrip(db, newTrip)
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte("201 - Course added: " +
+					params["passengerid"]))
 			} else {
 				w.WriteHeader(
 					http.StatusUnprocessableEntity)
@@ -133,6 +127,7 @@ func requestTrip(w http.ResponseWriter, r *http.Request) {
 					"in JSON format"))
 			}
 		}
+	}
 }
 
 var db *sql.DB
