@@ -81,17 +81,18 @@ func fetchFirstAvailableDriver() (driverId int, err error) {
 	var drivers []string
 	json.Unmarshal(data, &drivers)
 	fmt.Println(drivers)
+	return driver[0], nil
 }
 
 func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 	// insert into db
-	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus) VALUES(?,?,?,?,?)", tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, 0)
+	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus) VALUES(?,?,?,?,?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, tripDetails.TripStatus, tripDetails.DateOfTrip)
+	_, err = stmt.Exec(tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, tripDetails.TripStatus)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -100,7 +101,6 @@ func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 
 func requestTrip(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fetchedTripData, _ := getTripsById(db, params["passengerid"])
 	if r.Header.Get("Content-type") == "application/json" {
 		// POST is for creating new trip
 		if r.Method == "POST" {
@@ -109,13 +109,15 @@ func requestTrip(w http.ResponseWriter, r *http.Request) {
 
 			if err == nil {
 				// convert JSON to object
-				json.Unmarshal(reqBody, &newTrip)
-
-
+				json.Unmarshal(reqBody, &newTrip) 
 				// check if course exists; add only if
 				// course does not exist
 				if _, ok := pMap[params["passengerid"]]; !ok {
-					
+					driverId, _ := fetchFirstAvailableDriver() // get first available driver	
+					newTrip.DriverId = driverId
+					newTrip.PassengerId = params["passengerid"]
+					newTrip.TripStatus = 0
+					createTrip(db, newTrip)
 					w.WriteHeader(http.StatusCreated)
 					w.Write([]byte("201 - Course added: " +
 						params["passengerid"]))
