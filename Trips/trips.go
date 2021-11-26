@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -20,7 +21,7 @@ type Trip struct {
 	DriverId          string    `json:"driverid"`
 	PickUpPostalCode  string    `json:"pickuppostalcode"`
 	DropOffPostalCode string    `json:"dropoffpostalcode"`
-	TripStatus        int       `json:"tripstatus"`
+	TripStatus        int       `json:"tripstatus"` // 0 - pending, 1 - completed
 	DateOfTrip        time.Time `json:"dateoftrip"`
 }
 
@@ -36,7 +37,7 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1>", "Welcome to Trip's service")
 }
 
-func getTripsById(db *sql.DB, id string) ([]Trip, error) {
+func getTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
 	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=?", id)
@@ -61,10 +62,43 @@ func getTripsById(db *sql.DB, id string) ([]Trip, error) {
 
 }
 
-func fetchTrips(w http.ResponseWriter, r *http.Request) {
+func fetchPassengerTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fetchedTripData, _ := getTripsById(db, params["passengerid"])
+	fetchedTripData, _ := getTripsByPassengerId(db, params["passengerid"])
 	// fmt.Print(fetchedTripData, err)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedTripData)
+}
+
+func getTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
+	var tArr []Trip
+
+	rows, err := db.Query("SELECT * FROM Trips WHERE DriverId=?", id)
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var trip Trip
+		if err := rows.Scan(&trip.TripId, &trip.PassengerId, &trip.DriverId, &trip.PickUpPostalCode, &trip.DropOffPostalCode, &trip.TripStatus, &trip.DateOfTrip); err != nil {
+			return nil, fmt.Errorf("%v", err)
+		}
+		tArr = append(tArr, trip)
+		fmt.Println(tArr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+
+	return tArr, nil
+
+}
+
+func fetchDriverTrips(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	fetchedTripData, err := getTripsByDriverId(db, params["driverid"])
+	fmt.Println(err)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedTripData)
 }
@@ -119,15 +153,57 @@ func requestTrip(w http.ResponseWriter, r *http.Request) {
 				newTrip.DateOfTrip = time.Now() // add date of trip
 				createTrip(db, newTrip)
 				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte("201 - Course added: " +
+				w.Write([]byte("201 - Trip added for passenger id: " +
 					params["passengerid"]))
 			} else {
 				w.WriteHeader(
 					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply course information " +
+				w.Write([]byte("422 - Please supply trip information " +
 					"in JSON format"))
 			}
 		}
+	}
+}
+
+func updateTripStatus(db *sql.DB, tripId int, status int) (err error) {
+	stmt, err := db.Prepare("UPDATE Trips SET TripStatus=? WHERE TripId=?")
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(status, tripId)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func changeTripStatus(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	if r.Header.Get("Content-type") == "application/json" {
+		if r.Method == "POST" {
+			var newTrip Trip
+			reqBody, err := ioutil.ReadAll(r.Body)
+
+			if err == nil {
+				json.Unmarshal(reqBody, &newTrip)
+				tripId, _ := strconv.Atoi(params["tripid"])
+				fmt.Println(newTrip.TripStatus)
+				updateTripStatus(db, tripId, newTrip.TripStatus)
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte("201 - Trip Status Updated: " +
+					params["tripid"]))
+			} else {
+				w.WriteHeader(
+					http.StatusUnprocessableEntity)
+				w.Write([]byte("422 - Please supply trip information " +
+					"in JSON format"))
+			}
+		}
+
 	}
 }
 
@@ -160,9 +236,13 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(commonMiddleware) //setting context to "json"
 	router.HandleFunc("/api/v1/", welcome)
-	router.HandleFunc("/api/v1/trips/{passengerid}", fetchTrips).Methods(
+	router.HandleFunc("/api/v1/trip/{passengerid}", fetchPassengerTrips).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/trip/getCurrentTrips/{driverid}", fetchDriverTrips).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/trip/request/{passengerid}", requestTrip).Methods(
+		"POST")
+	router.HandleFunc("/api/v1/trip/changeStatus/{tripid}", changeTripStatus).Methods(
 		"POST")
 
 	fmt.Println("Listening at port 5002")
