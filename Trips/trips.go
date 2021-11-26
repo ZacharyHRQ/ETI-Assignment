@@ -87,14 +87,14 @@ func fetchFirstAvailableDriver() (driverId string, err error) {
 
 func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 	// insert into db
-	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus) VALUES(?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus,DateOfTrip ) VALUES(?,?,?,?,?,?)")
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, tripDetails.TripStatus)
+	_, err = stmt.Exec(tripDetails.PassengerId, tripDetails.DriverId, tripDetails.PickUpPostalCode, tripDetails.DropOffPostalCode, tripDetails.TripStatus, tripDetails.DateOfTrip)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -116,6 +116,7 @@ func requestTrip(w http.ResponseWriter, r *http.Request) {
 				newTrip.DriverId = driverId
 				newTrip.PassengerId = params["passengerid"]
 				newTrip.TripStatus = 0
+				newTrip.DateOfTrip = time.Now() // add date of trip
 				createTrip(db, newTrip)
 				w.WriteHeader(http.StatusCreated)
 				w.Write([]byte("201 - Course added: " +
