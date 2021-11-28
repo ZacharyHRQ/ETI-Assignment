@@ -24,6 +24,8 @@ type Passenger struct {
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
+		// w.Header().Set("Access-Control-Allow-Origin", "*")
+		// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -75,14 +77,18 @@ func getPassengerById(w http.ResponseWriter, r *http.Request) {
 }
 
 func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
-	query := fmt.Sprintf("INSERT INTO Passenger (FirstName, LastName, MoblieNo, EmailAddress) VALUES (%s, '%s', '%s', %s)",
-		fN, lN, mN, eA)
-
-	_, err := db.Query(query)
-
+	// insert passenger into db
+	stmt, err := db.Prepare("INSERT INTO Passenger (FirstName, LastName, MoblieNo, EmailAddress) VALUES (?,?,?,?)")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(fN, lN, mN, eA)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func editPassenger(db *sql.DB, fN, lN, mN, eA, id string) {
@@ -114,11 +120,13 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Deletion is not allowed"))
 	}
+}
 
+func createPassenger(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("create passenger")
 	if r.Header.Get("Content-type") == "application/json" {
 		// POST is for creating new course
 		if r.Method == "POST" {
-
 			// read the string sent to the service
 			var newPassenger Passenger
 			reqBody, err := ioutil.ReadAll(r.Body)
@@ -126,78 +134,62 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				// convert JSON to object
 				json.Unmarshal(reqBody, &newPassenger)
-
-				if newPassenger.PassengerId == "" {
-					w.WriteHeader(
-						http.StatusUnprocessableEntity)
-					w.Write([]byte(
-						"422 - Please supply course " + "information " + "in JSON format"))
-					return
-				}
-
-				// check if course exists; add only if
-				// course does not exist
-				if _, ok := pMap[params["passengerid"]]; !ok {
-					insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Course added: " +
-						params["passengerid"]))
-				} else {
-					w.WriteHeader(http.StatusConflict)
-					w.Write([]byte(
-						"409 - Duplicate course ID"))
-				}
+				fmt.Println(newPassenger)
+				insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
+				json.NewEncoder(w).Encode(newPassenger)
+				w.WriteHeader(http.StatusCreated)
+				w.Header().Set("Content-Type", "application/json")
 			} else {
 				w.WriteHeader(
 					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply course information " +
-					"in JSON format"))
-			}
-		}
-
-		if r.Method == "PUT" {
-			var newPassenger Passenger
-			reqBody, err := ioutil.ReadAll(r.Body)
-
-			if err == nil {
-				json.Unmarshal(reqBody, &newPassenger)
-				// fmt.Println(newPassenger)
-				newPassenger.PassengerId = params["passengerid"]
-
-				// fmt.Println(newPassenger.PassengerId)
-				if newPassenger.PassengerId == "" {
-					w.WriteHeader(
-						http.StatusUnprocessableEntity)
-					w.Write([]byte(
-						"422 - Please supply course " +
-							" information " +
-							"in JSON format"))
-					return
-				}
-
-				// check if course exists; add only if
-				// course does not exist
-				if _, ok := pMap[params["passengerid"]]; !ok {
-					insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Course added: " +
-						params["passengerid"]))
-				} else {
-					editPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress, newPassenger.PassengerId)
-					w.WriteHeader(http.StatusAccepted)
-					w.Write([]byte("202 - Course updated: " +
-						params["passengerid"]))
-				}
-			} else {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply " +
-					"course information " +
+				w.Write([]byte("422 - Please supply passenger information " +
 					"in JSON format"))
 			}
 		}
 	}
+}
 
+func updatePassenger(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	pMap, _ := getPassengers(db)
+	if r.Method == "PUT" {
+		var newPassenger Passenger
+		reqBody, err := ioutil.ReadAll(r.Body)
+		if err == nil {
+			json.Unmarshal(reqBody, &newPassenger)
+
+			// fmt.Println(newPassenger.PassengerId)
+			if newPassenger.PassengerId == "" {
+				w.WriteHeader(
+					http.StatusUnprocessableEntity)
+				w.Write([]byte(
+					"422 - Please supply course " +
+						" information " +
+						"in JSON format"))
+				return
+			}
+
+			// check if course exists; add only if
+			// course does not exist
+			if _, ok := pMap[params["passengerid"]]; !ok {
+				insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte("201 - Course added: " +
+					params["passengerid"]))
+			} else {
+				editPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress, newPassenger.PassengerId)
+				w.WriteHeader(http.StatusAccepted)
+				w.Write([]byte("202 - Course updated: " +
+					params["passengerid"]))
+			}
+		} else {
+			w.WriteHeader(
+				http.StatusUnprocessableEntity)
+			w.Write([]byte("422 - Please supply " +
+				"course information " +
+				"in JSON format"))
+		}
+	}
 }
 
 var db *sql.DB
@@ -233,7 +225,11 @@ func main() {
 	router.HandleFunc("/api/v1/passenger/{passengerid}", getPassengerById).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/passenger/{passengerid}", passenger).Methods(
-		"GET", "PUT", "POST", "DELETE")
+		"GET", "Delete")
+	router.HandleFunc("/api/v1/passenger/createPassenger", createPassenger).Methods(
+		"POST")
+	router.HandleFunc("/api/v1/passenger/updatePassenger/{passengerid}", updatePassenger).Methods(
+		"PUT")
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
 
