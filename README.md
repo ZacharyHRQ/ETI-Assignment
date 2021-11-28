@@ -8,9 +8,9 @@
 - [ ] Update driver account
 - [x] Create trip
 - [x] Allow passenger to request for a trip // who the driver will be
-- [ ] Allow driver start or end trip
+- [x] Allow driver start or end trip
 - [x] Allow passenger to fetch all trips he has taken
-- [ ] Create frontend
+- [x] Create frontend
 
 ## Ports used
 

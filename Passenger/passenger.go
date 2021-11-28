@@ -64,6 +64,16 @@ func allPassengers(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getPassengerById(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["passengerid"]
+	fmt.Println(id)
+	fetchedPassengerData, _ := getPassengers(db)
+	fmt.Println(fetchedPassengerData)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedPassengerData[id])
+}
+
 func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
 	query := fmt.Sprintf("INSERT INTO Passenger (FirstName, LastName, MoblieNo, EmailAddress) VALUES (%s, '%s', '%s', %s)",
 		fN, lN, mN, eA)
@@ -219,6 +229,8 @@ func main() {
 	router.Use(commonMiddleware) //setting context to "json"
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/passengers", allPassengers).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/passenger/{passengerid}", getPassengerById).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/passenger/{passengerid}", passenger).Methods(
 		"GET", "PUT", "POST", "DELETE")

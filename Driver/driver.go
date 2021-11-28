@@ -61,9 +61,19 @@ func getDrivers(db *sql.DB) (map[string]Driver, error) {
 func allDrivers(w http.ResponseWriter, r *http.Request) {
 	// fetch passenger map from db
 	fetchedPassengerData, _ := getDrivers(db)
-	fmt.Println(fetchedPassengerData)
+	// fmt.Println(fetchedPassengerData)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedPassengerData)
+
+}
+
+func getDriverById(w http.ResponseWriter, r *http.Request) {
+	// fetch passenger map from db
+	params := mux.Vars(r)
+	fetchedPassengerData, _ := getDrivers(db)
+	fmt.Println(fetchedPassengerData)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedPassengerData[params["driverid"]])
 
 }
 
@@ -226,6 +236,45 @@ func fetchAvailableDrivers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(driverIds)
 }
 
+func updateDriverStatus(db *sql.DB, driverId string, status int) (err error) {
+	stmt, err := db.Prepare("UPDATE Driver SET DriverStatus=? WHERE DriverId=?")
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(status, driverId)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return nil
+}
+
+func changeDriverStatus(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	if r.Header.Get("Content-type") == "application/json" {
+		if r.Method == "POST" {
+			var newDriver Driver
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err == nil {
+				json.Unmarshal(reqBody, &newDriver)
+				updateDriverStatus(db, params["driverid"], newDriver.DriverStatus)
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte("201 - Driver Status Updated: " +
+					params["driverid"]))
+			} else {
+				w.WriteHeader(
+					http.StatusUnprocessableEntity)
+				w.Write([]byte("422 - Please supply driver information " +
+					"in JSON format"))
+			}
+		}
+
+	}
+}
+
 var db *sql.DB
 
 func main() {
@@ -256,10 +305,14 @@ func main() {
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/drivers", allDrivers).Methods(
 		"GET")
+	router.HandleFunc("/api/v1/driver/{driverid}", getDriverById).Methods(
+		"GET")
 	router.HandleFunc("/api/v1/availabledrivers", fetchAvailableDrivers).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/driver/{driverid}", passenger).Methods(
 		"GET", "PUT", "POST", "DELETE")
+	router.HandleFunc("/api/v1/driver/changeStatus/{driverid}", changeDriverStatus).Methods(
+		"POST")
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", router))
