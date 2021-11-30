@@ -18,13 +18,13 @@ export default function Home() {
             <h3>Passenger Sign Up &rarr;</h3>
           </a>
 
-          <a href="https://nextjs.org/learn" className="card">
+          <a href="http://localhost:3000/driver/driver-signup" className="card">
             <h3>Driver Sign Up &rarr;</h3>
 
           </a>
 
           <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
+            href="http://localhost:3000/passenger/passenger-update"
             className="card"
           >
             <h3>Update Passenger Details &rarr;</h3>
@@ -32,10 +32,26 @@ export default function Home() {
           </a>
 
           <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
+            href="http://localhost:3000/driver/update-driver"
             className="card"
           >
             <h3>Update Driver Details &rarr;</h3>
+            
+          </a>
+
+          <a
+            href="http://localhost:3000/request-Trip"
+            className="card"
+          >
+            <h3>Request Trip &rarr;</h3>
+            
+          </a>
+
+          <a
+            href="http://localhost:3000/accept-Trip"
+            className="card"
+          >
+            <h3>Accept Trip &rarr;</h3>
             
           </a>
         </div>

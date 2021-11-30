@@ -10,33 +10,22 @@ export default function PassengerSignUp() {
     async function handleSubmit(event) {
       event.preventDefault();
       const data = new FormData(event.target);
-      console.log({
+      const jsonString = JSON.stringify({
         firstname: data.get("firstname"),
         lastname: data.get("lastname"),
         moblieno: data.get("moblieno"),
         emailaddress: data.get("email"),
       });
+      console.log(jsonString);
       const url = 'http://localhost:5000/api/v1/';
       const res = await fetch('http://localhost:5000/api/v1/passenger/createPassenger', {
-        body : JSON.stringify({
-          FirstName: data.get("firstname"),
-          LastName: data.get("lastname"),
-          MoblieNo: data.get("moblieno"),
-          EmailAddress: data.get("email"),
-        }),
+        body : jsonString,
         method : 'POST',
         headers : {
           'Content-Type' : 'application/json',
-          'Access-Control-Allow-Origin' : '*',
-          'Access-Control-Allow-Methods' : 'POST, GET, OPTIONS, PUT, DELETE',
-          'Access-Control-Allow-Headers' : 'Content-Type, Accept, X-Requested-With, remember-me',
         },
         mode : 'no-cors',
-      });
-      
-      const json = await JSON.parse(res);
-      console.log(json);
-
+      }).then(res => res.json()).then(res => console.log(res));    
     }
 
     return (<div> 

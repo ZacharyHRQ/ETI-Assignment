@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -24,7 +25,7 @@ type Passenger struct {
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
-		// w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		next.ServeHTTP(w, r)
 	})
@@ -124,29 +125,30 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 
 func createPassenger(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("create passenger")
-	if r.Header.Get("Content-type") == "application/json" {
-		// POST is for creating new course
-		if r.Method == "POST" {
-			// read the string sent to the service
-			var newPassenger Passenger
-			reqBody, err := ioutil.ReadAll(r.Body)
+	pMap, _ := getPassengers(db)
+	if r.Method == "POST" {
+		// read the string sent to the service
+		var newPassenger Passenger
+		rb, err := ioutil.ReadAll(r.Body)
+		fmt.Println(string(rb), err)
 
-			if err == nil {
-				// convert JSON to object
-				json.Unmarshal(reqBody, &newPassenger)
-				fmt.Println(newPassenger)
-				insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
-				json.NewEncoder(w).Encode(newPassenger)
-				w.WriteHeader(http.StatusCreated)
-				w.Header().Set("Content-Type", "application/json")
-			} else {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply passenger information " +
-					"in JSON format"))
-			}
+		if err == nil {
+			// convert JSON to object
+			json.Unmarshal(rb, &newPassenger)
+			fmt.Println(newPassenger)
+			insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
+			w.WriteHeader(http.StatusCreated)
+			newPassenger.PassengerId = strconv.Itoa(len(pMap) + 1)
+			fmt.Println(newPassenger)
+			json.NewEncoder(w).Encode(newPassenger)
+		} else {
+			w.WriteHeader(
+				http.StatusUnprocessableEntity)
+			w.Write([]byte("422 - Please supply passenger information " +
+				"in JSON format"))
 		}
 	}
+
 }
 
 func updatePassenger(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +226,7 @@ func main() {
 		"GET")
 	router.HandleFunc("/api/v1/passenger/{passengerid}", getPassengerById).Methods(
 		"GET")
-	router.HandleFunc("/api/v1/passenger/{passengerid}", passenger).Methods(
+	router.HandleFunc("/api/v1/passengers/{passengerid}", passenger).Methods(
 		"GET", "Delete")
 	router.HandleFunc("/api/v1/passenger/createPassenger", createPassenger).Methods(
 		"POST")
