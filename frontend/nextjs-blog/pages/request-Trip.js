@@ -7,6 +7,13 @@ import Box from '@mui/material/Box';
 import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
 
 
 export async function getStaticProps() {
@@ -21,6 +28,8 @@ export default function RequestTrip({passengersid}) {
     const [id, setid] = React.useState("");
     const [pickUpPostal, setpickUpPostal] = React.useState("");
     const [dropOffPostal, setdropOffPostal] = React.useState("");
+    const [trips, setTrips] = React.useState([]);
+
 
     const handleChange = (event) => {
       setid(event.target.value);
@@ -44,7 +53,11 @@ export default function RequestTrip({passengersid}) {
           mode : 'no-cors',
         })
         console.log(res.status);
-      }
+    }
+
+    async function getTrips() {
+    }
+
 
     return (<div> 
     
@@ -99,12 +112,54 @@ export default function RequestTrip({passengersid}) {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
             >
-              Update
+              Request
             </Button>
 
             
-    </Box>
+        </Box>
+        <h1>Previous Trips</h1>
     </Container>
+
+    <TableContainer component={Paper}>
+                <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                    <TableHead>
+                    <TableRow>
+                        <TableCell>TripId</TableCell>
+                        <TableCell align="right">PassengerId</TableCell>
+                        <TableCell align="right">DriverId</TableCell>
+                        <TableCell align="right">PickUpPostalCode</TableCell>
+                        <TableCell align="right">DropOffPostalCode</TableCell>
+                        <TableCell align="right">TripStatus</TableCell>
+                        <TableCell align="right">DateOfTrip</TableCell>
+                        <TableCell align="right">Accept</TableCell>
+
+                    </TableRow>
+                    </TableHead>
+                    <TableBody>
+                    {trips ? trips.map((row) => (
+                        <TableRow
+                        key={row.tripid}
+                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                        <TableCell component="th" scope="row">
+                            {row.tripid}
+                        </TableCell>
+                        <TableCell align="right">{row.passengerid}</TableCell>
+                        <TableCell align="right">{row.driverid}</TableCell>
+                        <TableCell align="right">{row.pickuppostalcode}</TableCell>
+                        <TableCell align="right">{row.dropoffpostalcode}</TableCell>
+                        <TableCell align="right">{row.tripstatus}</TableCell>
+                        <TableCell align="right">{row.dateoftrip}</TableCell>
+                        <Button
+                            onClick={acceptTrip}  sx={{ mt: 3, mb: 2 }}>
+                            Accept
+                        </Button>
+
+                        </TableRow>
+                    )) : null}
+                    </TableBody>
+                </Table>
+            </TableContainer>
 
     
     </div>)
