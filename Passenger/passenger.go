@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
+	"sort"
 
 	"github.com/gorilla/mux"
 
@@ -26,13 +26,13 @@ func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		next.ServeHTTP(w, r)
 	})
 }
 
 func welcome(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>%s</h1>", "Welcome to Passenger's service")
+	fmt.Fprintf(w, "%s", "Welcome to Passenger's service")
 }
 
 func getPassengers(db *sql.DB) (map[string]Passenger, error) {
@@ -47,7 +47,7 @@ func getPassengers(db *sql.DB) (map[string]Passenger, error) {
 	for rows.Next() {
 		var person Passenger
 		if err := rows.Scan(&person.PassengerId, &person.FirstName,
-			&person.LastName, &person.EmailAddress, &person.MoblieNo); err != nil {
+			&person.LastName, &person.MoblieNo, &person.EmailAddress); err != nil {
 			return nil, fmt.Errorf("%v", err)
 		}
 		pMap[person.PassengerId] = person
@@ -77,6 +77,19 @@ func getPassengerById(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fetchedPassengerData[id])
 }
 
+func getPassengerIds(w http.ResponseWriter, r *http.Request) {
+	pMap, _ := getPassengers(db)
+	ids := make([]string, len(pMap))
+	i := 0
+	for k := range pMap {
+		ids[i] = k
+		i++
+	}
+	sort.Strings(ids)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(ids)
+}
+
 func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
 	// insert passenger into db
 	stmt, err := db.Prepare("INSERT INTO Passenger (FirstName, LastName, MoblieNo, EmailAddress) VALUES (?,?,?,?)")
@@ -93,13 +106,16 @@ func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
 }
 
 func editPassenger(db *sql.DB, fN, lN, mN, eA, id string) {
-	query := fmt.Sprintf("UPDATE Passenger SET FirstName='%s', LastName='%s', MoblieNo='%s', EmailAddress='%s' WHERE PassengerId=%s",
-		fN, lN, mN, eA, id)
 
-	_, err := db.Query(query)
-
+	stmt, err := db.Prepare("UPDATE Passenger SET FirstName=?, LastName=?, MoblieNo=?, EmailAddress=? WHERE PassengerId=?")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(fN, lN, mN, eA, id)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -110,6 +126,7 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 
 		if _, ok := pMap[params["passengerid"]]; ok {
+			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(pMap[params["passengerid"]])
 		} else {
 			w.WriteHeader(http.StatusNotFound)
@@ -124,8 +141,6 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 }
 
 func createPassenger(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("create passenger")
-	pMap, _ := getPassengers(db)
 	if r.Method == "POST" {
 		// read the string sent to the service
 		var newPassenger Passenger
@@ -138,8 +153,6 @@ func createPassenger(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(newPassenger)
 			insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
 			w.WriteHeader(http.StatusCreated)
-			newPassenger.PassengerId = strconv.Itoa(len(pMap) + 1)
-			fmt.Println(newPassenger)
 			json.NewEncoder(w).Encode(newPassenger)
 		} else {
 			w.WriteHeader(
@@ -153,42 +166,21 @@ func createPassenger(w http.ResponseWriter, r *http.Request) {
 
 func updatePassenger(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	pMap, _ := getPassengers(db)
-	if r.Method == "PUT" {
+	if r.Method == "POST" {
 		var newPassenger Passenger
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err == nil {
 			json.Unmarshal(reqBody, &newPassenger)
+			editPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress, params["passengerid"])
+			w.WriteHeader(http.StatusAccepted)
+			w.Write([]byte("202 - Passenger updated: " +
+				params["passengerid"]))
 
-			// fmt.Println(newPassenger.PassengerId)
-			if newPassenger.PassengerId == "" {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte(
-					"422 - Please supply course " +
-						" information " +
-						"in JSON format"))
-				return
-			}
-
-			// check if course exists; add only if
-			// course does not exist
-			if _, ok := pMap[params["passengerid"]]; !ok {
-				insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte("201 - Course added: " +
-					params["passengerid"]))
-			} else {
-				editPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress, newPassenger.PassengerId)
-				w.WriteHeader(http.StatusAccepted)
-				w.Write([]byte("202 - Course updated: " +
-					params["passengerid"]))
-			}
 		} else {
 			w.WriteHeader(
 				http.StatusUnprocessableEntity)
 			w.Write([]byte("422 - Please supply " +
-				"course information " +
+				"Passenger information " +
 				"in JSON format"))
 		}
 	}
@@ -220,18 +212,20 @@ func main() {
 	fmt.Println("Connected!")
 
 	router := mux.NewRouter()
-	router.Use(commonMiddleware) //setting context to "json"
-	router.HandleFunc("/api/v1/", welcome)
+	router.Use(commonMiddleware) //setting context to "json" n cors error
+	router.HandleFunc("/", welcome)
 	router.HandleFunc("/api/v1/passengers", allPassengers).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/passenger/{passengerid}", getPassengerById).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/passengersid/", getPassengerIds).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/passengers/{passengerid}", passenger).Methods(
 		"GET", "Delete")
 	router.HandleFunc("/api/v1/passenger/createPassenger", createPassenger).Methods(
 		"POST")
 	router.HandleFunc("/api/v1/passenger/updatePassenger/{passengerid}", updatePassenger).Methods(
-		"PUT")
+		"POST")
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
 

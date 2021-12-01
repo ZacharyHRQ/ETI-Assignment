@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -73,7 +74,7 @@ func fetchPassengerTrips(w http.ResponseWriter, r *http.Request) {
 func getTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
-	rows, err := db.Query("SELECT * FROM Trips WHERE DriverId=?", id)
+	rows, err := db.Query("SELECT * FROM Trips WHERE DriverId=? AND TripStatus=0", id)
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
@@ -105,11 +106,12 @@ func fetchDriverTrips(w http.ResponseWriter, r *http.Request) {
 
 // request for trip
 func fetchFirstAvailableDriver() (driverId string, err error) {
-	// get all drivers
+	// get driverid
 	const baseURL = "http://localhost:5001/api/v1/availabledrivers"
 	resp, err := http.Get(baseURL)
 	if err != nil {
 		log.Fatal(err)
+		return "", err
 	}
 	defer resp.Body.Close()
 	data, _ := ioutil.ReadAll(resp.Body)
@@ -117,6 +119,26 @@ func fetchFirstAvailableDriver() (driverId string, err error) {
 	json.Unmarshal(data, &drivers)
 	fmt.Println(drivers)
 	return drivers[0], nil
+}
+
+func changeDriverStatus(driverid string, driverStatus int) (err error) {
+	// get all drivers
+	jsonValue, _ := json.Marshal(map[string]int{"driverstatus": driverStatus})
+	baseURL := "http://localhost:5001/api/v1/driver/changeStatus/" + driverid
+	request, err := http.NewRequest(http.MethodPost, baseURL, bytes.NewBuffer(jsonValue))
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(request)
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	} else {
+		fmt.Println(resp.StatusCode)
+	}
+	defer request.Body.Close()
+	return nil
 }
 
 func createTrip(db *sql.DB, tripDetails Trip) (err error) {
@@ -138,31 +160,32 @@ func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 
 func requestTrip(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	if r.Header.Get("Content-type") == "application/json" {
-		// POST is for creating new trip
-		if r.Method == "POST" {
-			var newTrip Trip
-			reqBody, err := ioutil.ReadAll(r.Body)
+	// POST is for creating new trip
+	if r.Method == "POST" {
+		var newTrip Trip
+		fmt.Println(r.Body)
+		reqBody, err := ioutil.ReadAll(r.Body)
 
-			if err == nil {
-				json.Unmarshal(reqBody, &newTrip)
-				driverId, _ := fetchFirstAvailableDriver() // get first available driver
-				newTrip.DriverId = driverId
-				newTrip.PassengerId = params["passengerid"]
-				newTrip.TripStatus = 0
-				newTrip.DateOfTrip = time.Now() // add date of trip
-				createTrip(db, newTrip)
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte("201 - Trip added for passenger id: " +
-					params["passengerid"]))
-			} else {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply trip information " +
-					"in JSON format"))
-			}
+		if err == nil {
+			json.Unmarshal(reqBody, &newTrip)
+			driverId, _ := fetchFirstAvailableDriver() // get first available driver
+			newTrip.DriverId = driverId
+			newTrip.PassengerId = params["passengerid"]
+			newTrip.TripStatus = 0
+			newTrip.DateOfTrip = time.Now() // add date of trip
+			createTrip(db, newTrip)
+			changeDriverStatus(driverId, 0) // change to unavailable
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte("201 - Trip added for passenger id: " +
+				params["passengerid"]))
+		} else {
+			w.WriteHeader(
+				http.StatusUnprocessableEntity)
+			w.Write([]byte("422 - Please supply trip information " +
+				"in JSON format"))
 		}
 	}
+
 }
 
 func updateTripStatus(db *sql.DB, tripId int, status int) (err error) {
@@ -183,25 +206,23 @@ func updateTripStatus(db *sql.DB, tripId int, status int) (err error) {
 
 func changeTripStatus(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	if r.Header.Get("Content-type") == "application/json" {
-		if r.Method == "POST" {
-			var newTrip Trip
-			reqBody, err := ioutil.ReadAll(r.Body)
+	if r.Method == "POST" {
+		var newTrip Trip
+		reqBody, err := ioutil.ReadAll(r.Body)
 
-			if err == nil {
-				json.Unmarshal(reqBody, &newTrip)
-				tripId, _ := strconv.Atoi(params["tripid"])
-				fmt.Println(newTrip.TripStatus)
-				updateTripStatus(db, tripId, newTrip.TripStatus)
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte("201 - Trip Status Updated: " +
-					params["tripid"]))
-			} else {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply trip information " +
-					"in JSON format"))
-			}
+		if err == nil {
+			json.Unmarshal(reqBody, &newTrip)
+			tripId, _ := strconv.Atoi(params["tripid"])
+			fmt.Println(newTrip.TripStatus)
+			updateTripStatus(db, tripId, newTrip.TripStatus)
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte("201 - Trip Status Updated: " +
+				params["tripid"]))
+		} else {
+			w.WriteHeader(
+				http.StatusUnprocessableEntity)
+			w.Write([]byte("422 - Please supply trip information " +
+				"in JSON format"))
 		}
 
 	}
@@ -238,11 +259,11 @@ func main() {
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/trip/{passengerid}", fetchPassengerTrips).Methods(
 		"GET")
-	router.HandleFunc("/api/v1/trip/getCurrentTrips/{driverid}", fetchDriverTrips).Methods(
+	router.HandleFunc("/api/v1/getCurrentTrips/{driverid}", fetchDriverTrips).Methods(
 		"GET")
-	router.HandleFunc("/api/v1/trip/request/{passengerid}", requestTrip).Methods(
+	router.HandleFunc("/api/v1/request/{passengerid}", requestTrip).Methods(
 		"POST")
-	router.HandleFunc("/api/v1/trip/changeStatus/{tripid}", changeTripStatus).Methods(
+	router.HandleFunc("/api/v1/changeStatus/{tripid}", changeTripStatus).Methods(
 		"POST")
 
 	fmt.Println("Listening at port 5002")

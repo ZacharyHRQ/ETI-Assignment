@@ -32,7 +32,7 @@ export default function Home() {
           </a>
 
           <a
-            href="http://localhost:3000/driver/update-driver"
+            href="http://localhost:3000/driver/driver-update"
             className="card"
           >
             <h3>Update Driver Details &rarr;</h3>

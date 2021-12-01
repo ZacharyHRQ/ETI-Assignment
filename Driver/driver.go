@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/gorilla/mux"
 
@@ -27,6 +28,8 @@ type Driver struct {
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -47,7 +50,7 @@ func getDrivers(db *sql.DB) (map[string]Driver, error) {
 	for rows.Next() {
 		var person Driver
 		if err := rows.Scan(&person.DriverId, &person.FirstName,
-			&person.LastName, &person.EmailAddress, &person.MoblieNo, &person.CarLicenseNo, &person.DriverStatus); err != nil {
+			&person.LastName, &person.MoblieNo, &person.EmailAddress, &person.CarLicenseNo, &person.DriverStatus); err != nil {
 			return nil, fmt.Errorf("%v", err)
 		}
 		pMap[person.DriverId] = person
@@ -59,7 +62,7 @@ func getDrivers(db *sql.DB) (map[string]Driver, error) {
 }
 
 func allDrivers(w http.ResponseWriter, r *http.Request) {
-	// fetch passenger map from db
+	// fetch driver map from db
 	fetchedPassengerData, _ := getDrivers(db)
 	// fmt.Println(fetchedPassengerData)
 	w.WriteHeader(http.StatusOK)
@@ -68,7 +71,7 @@ func allDrivers(w http.ResponseWriter, r *http.Request) {
 }
 
 func getDriverById(w http.ResponseWriter, r *http.Request) {
-	// fetch passenger map from db
+	// fetch driver map from db
 	params := mux.Vars(r)
 	fetchedPassengerData, _ := getDrivers(db)
 	fmt.Println(fetchedPassengerData)
@@ -77,36 +80,76 @@ func getDriverById(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
-	query := fmt.Sprintf("INSERT INTO Passenger (FirstName, LastName, MoblieNo, EmailAddress) VALUES (%s, '%s', '%s', %s)",
-		fN, lN, mN, eA)
-
-	_, err := db.Query(query)
-
+func insertDriver(db *sql.DB, fN, lN, mN, eA, cA string) {
+	stmt, err := db.Prepare("INSERT INTO Driver (FirstName, LastName, MoblieNo, EmailAddress, CarLicenseNo) VALUES (?,?,?,?,?)")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(fN, lN, mN, eA, cA)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
-func editPassenger(db *sql.DB, fN, lN, mN, eA, id string) {
-	query := fmt.Sprintf("UPDATE Passenger SET FirstName='%s', LastName='%s', MoblieNo='%s', EmailAddress='%s' WHERE PassengerId=%s",
-		fN, lN, mN, eA, id)
-
-	_, err := db.Query(query)
-
+func editDriver(db *sql.DB, fN, lN, mN, eA, cA, id string) {
+	stmt, err := db.Prepare("UPDATE Driver SET FirstName=?, LastName=?, MoblieNo=?, EmailAddress=?, CarLicenseNo=? WHERE DriverId=?")
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(fN, lN, mN, eA, cA, id)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
-func passenger(w http.ResponseWriter, r *http.Request) {
+func createDriver(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal(err)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			w.Write([]byte("422- Please supply driver information in JSON format"))
+		}
+		var driver Driver
+		json.Unmarshal(body, &driver)
+		fmt.Println(driver.CarLicenseNo)
+		insertDriver(db, driver.FirstName, driver.LastName, driver.MoblieNo, driver.EmailAddress, driver.CarLicenseNo)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(driver)
+	}
+}
+
+func updateDriver(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	if r.Method == "POST" {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Fatal(err)
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			w.Write([]byte("422- Please supply driver information in JSON format"))
+		}
+		var driver Driver
+		json.Unmarshal(body, &driver)
+		fmt.Println(driver)
+		editDriver(db, driver.FirstName, driver.LastName, driver.MoblieNo, driver.EmailAddress, driver.CarLicenseNo, params["driverid"])
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(driver)
+	}
+}
+
+func getDriver(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	pMap, _ := getDrivers(db)
 
 	if r.Method == "GET" {
 
-		if _, ok := pMap[params["passengerid"]]; ok {
-			json.NewEncoder(w).Encode(pMap[params["passengerid"]])
+		if _, ok := pMap[params["driverid"]]; ok {
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(pMap[params["driverid"]])
 		} else {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("404 - No course found"))
@@ -117,89 +160,6 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Deletion is not allowed"))
 	}
-
-	if r.Header.Get("Content-type") == "application/json" {
-		// POST is for creating new course
-		if r.Method == "POST" {
-
-			// read the string sent to the service
-			var newDriver Driver
-			reqBody, err := ioutil.ReadAll(r.Body)
-
-			if err == nil {
-				// convert JSON to object
-				json.Unmarshal(reqBody, &newDriver)
-
-				if newDriver.DriverId == "" {
-					w.WriteHeader(
-						http.StatusUnprocessableEntity)
-					w.Write([]byte(
-						"422 - Please supply course " + "information " + "in JSON format"))
-					return
-				}
-
-				// check if course exists; add only if
-				// course does not exist
-				if _, ok := pMap[params["driverid"]]; !ok {
-					insertPassenger(db, newDriver.FirstName, newDriver.LastName, newDriver.MoblieNo, newDriver.EmailAddress)
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Course added: " +
-						params["driverid"]))
-				} else {
-					w.WriteHeader(http.StatusConflict)
-					w.Write([]byte(
-						"409 - Duplicate course ID"))
-				}
-			} else {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply course information " +
-					"in JSON format"))
-			}
-		}
-
-		if r.Method == "PUT" {
-			var newPassenger Driver
-			reqBody, err := ioutil.ReadAll(r.Body)
-
-			if err == nil {
-				json.Unmarshal(reqBody, &newPassenger)
-				newPassenger.DriverId = params["driverid"]
-				if newPassenger.DriverId == "" {
-					w.WriteHeader(
-						http.StatusUnprocessableEntity)
-					w.Write([]byte(
-						"422 - Please supply course " +
-							" information " +
-							"in JSON format"))
-					return
-				}
-
-				// check if course exists; add only if
-				// course does not exist
-				if _, ok := pMap[params["driverid"]]; !ok {
-					//insertPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress)
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Course added: " +
-						params["driverid"]))
-				} else {
-					// update course
-					// to fix-
-					//editPassenger(db, newPassenger.FirstName, newPassenger.LastName, newPassenger.MoblieNo, newPassenger.EmailAddress, newPassenger.PassengerId)
-					w.WriteHeader(http.StatusAccepted)
-					w.Write([]byte("202 - Course updated: " +
-						params["driverid"]))
-				}
-			} else {
-				w.WriteHeader(
-					http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply " +
-					"course information " +
-					"in JSON format"))
-			}
-		}
-	}
-
 }
 
 func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
@@ -214,7 +174,7 @@ func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
 	for rows.Next() {
 		var person Driver
 		if err := rows.Scan(&person.DriverId, &person.FirstName,
-			&person.LastName, &person.EmailAddress, &person.MoblieNo, &person.CarLicenseNo, &person.DriverStatus); err != nil {
+			&person.LastName, &person.MoblieNo, &person.EmailAddress, &person.CarLicenseNo, &person.DriverStatus); err != nil {
 			return nil, fmt.Errorf("%v", err)
 		}
 		pMap[person.DriverId] = person
@@ -275,6 +235,18 @@ func changeDriverStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getDriverIds(w http.ResponseWriter, r *http.Request) {
+	dMap, _ := getDrivers(db)
+	driverIds := make([]string, 0)
+	for k := range dMap {
+		fmt.Println(k)
+		driverIds = append(driverIds, k)
+	}
+	sort.Strings(driverIds)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(driverIds)
+}
+
 var db *sql.DB
 
 func main() {
@@ -309,8 +281,14 @@ func main() {
 		"GET")
 	router.HandleFunc("/api/v1/availabledrivers", fetchAvailableDrivers).Methods(
 		"GET")
-	router.HandleFunc("/api/v1/driver/{driverid}", passenger).Methods(
-		"GET", "PUT", "POST", "DELETE")
+	router.HandleFunc("/api/v1/fetchAllIds", getDriverIds).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/driver/{driverid}", getDriver).Methods(
+		"GET", "DELETE")
+	router.HandleFunc("/api/v1/driver/createDriver", createDriver).Methods(
+		"POST")
+	router.HandleFunc("/api/v1/driver/updateDriver/{driverid}", updateDriver).Methods(
+		"POST")
 	router.HandleFunc("/api/v1/driver/changeStatus/{driverid}", changeDriverStatus).Methods(
 		"POST")
 

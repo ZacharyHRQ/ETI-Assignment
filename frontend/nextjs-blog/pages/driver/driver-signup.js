@@ -5,7 +5,7 @@ import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 
 
-export default function PassengerSignUp() {
+export default function DriverSignUp() {
   
     async function handleSubmit(event) {
       event.preventDefault();
@@ -15,9 +15,10 @@ export default function PassengerSignUp() {
         lastname: data.get("lastname"),
         moblieno: data.get("moblieno"),
         emailaddress: data.get("email"),
+        carlicenseno: data.get("carlicenseno"),
       });
       console.log(jsonString);
-      const res = await fetch('http://localhost:5000/api/v1/passenger/createPassenger', {
+      const res = await fetch('http://localhost:5001/api/v1/driver/createDriver', {
         body : jsonString,
         method : 'POST',
         headers : {
@@ -32,7 +33,7 @@ export default function PassengerSignUp() {
     return (<div> 
     
     <Container component="main" maxWidth="xs">
-      <h1>Passenger SignUp</h1>
+      <h1>Driver SignUp</h1>
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
             <TextField
               margin="normal"
@@ -70,6 +71,14 @@ export default function PassengerSignUp() {
               label="Moblie Number"
               id="moblieno"
               inputProps={{maxLength:8}}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="carlicenseno"
+              label="Car License No"
+              id="carlicense"
             />
             
             <Button

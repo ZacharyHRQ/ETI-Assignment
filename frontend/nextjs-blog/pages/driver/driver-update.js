@@ -10,19 +10,21 @@ import MenuItem from '@mui/material/MenuItem';
 
 
 export async function getStaticProps() {
-  const res = await axios.get('http://localhost:5000/api/v1/passengersid/')
-  const passengersid = await res.data;
+  const res = await axios.get('http://localhost:5001/api/v1/fetchAllIds')
+  const driverids = await res.data;
   return {
-    props: { passengersid }
+    props: { driverids }
   }
 }
 
-export default function PassengerUpdate({passengersid}) {
+export default function PassengerUpdate({driverids}) {
     const [id, setid] = React.useState("");
     const [firstname, setfirstname] = React.useState("");
     const [lastname, setlastname] = React.useState("");
     const [moblieno, setmoblieno] = React.useState("");
     const [emailaddress, setaddress] = React.useState("");
+    const [carlicense, setcarlicense] = React.useState("");
+
 
     const handleChange = (event) => {
       setid(event.target.value);
@@ -32,13 +34,15 @@ export default function PassengerUpdate({passengersid}) {
 
     // parse json data to Object and update to fields
     const handleClick = () => {
-      axios.get('http://localhost:5000/api/v1/passenger/'+id)
+      axios.get('http://localhost:5001/api/v1/driver/'+id)
       .then(res => {
-        const passenger = res.data;
-        setfirstname(passenger.firstname);
-        setlastname(passenger.lastname);
-        setmoblieno(passenger.moblieno);
-        setaddress(passenger.emailaddress);
+        const driver = res.data;
+        console.log(driver);
+        setfirstname(driver.firstname);
+        setlastname(driver.lastname);
+        setmoblieno(driver.moblieno);
+        setaddress(driver.emailaddress);
+        setcarlicense(driver.carlicenseno);
       })
     }
 
@@ -49,9 +53,10 @@ export default function PassengerUpdate({passengersid}) {
           lastname: lastname,
           moblieno: moblieno,
           emailaddress: emailaddress,
+          carlicenseno: carlicense
         });
         console.log(jsonString);
-        const res = await fetch('http://localhost:5000/api/v1/passenger/updatePassenger/'+id, {
+        const res = await fetch('http://localhost:5001/api/v1/driver/updateDriver/'+id, {
           body : jsonString,
           method : 'POST',
           headers : {
@@ -65,7 +70,7 @@ export default function PassengerUpdate({passengersid}) {
     return (<div> 
     
     <Container component="main" maxWidth="xs">
-      <h1>Passenger Update</h1>
+      <h1>Driver Update</h1>
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
       <InputLabel id="demo-simple-select-standard-label">Id</InputLabel>
       <Select
@@ -80,8 +85,8 @@ export default function PassengerUpdate({passengersid}) {
             <em>None</em>
           </MenuItem>
 
-          {passengersid.map(passengerId => (
-            <MenuItem value={passengerId} key={passengerId}>{passengerId}</MenuItem>
+          {driverids.map(driverId => (
+            <MenuItem value={driverId} key={driverId}>{driverId}</MenuItem>
           ))}
         </Select>
             <TextField
@@ -126,6 +131,17 @@ export default function PassengerUpdate({passengersid}) {
               id="moblieno"
               onChange={(e) => setmoblieno(e.target.value)}
               value={moblieno}
+              inputProps={{maxLength:8}}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="carlicenseno"
+              label="Car License No"
+              id="carlicense"
+              onChange={(e) => setcarlicense(e.target.value)}
+              value={carlicense}
               inputProps={{maxLength:8}}
             />
             
