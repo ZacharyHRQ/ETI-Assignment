@@ -8,6 +8,8 @@
 
 ## Architecture Diagram
 
+![Architecture Diagram](https://github.com/ZacharyHRQ/ETI-Assignment/blob/main/Architecture.png)
+
 ## Instructions for setting up and running
 
 ### Prerequites
