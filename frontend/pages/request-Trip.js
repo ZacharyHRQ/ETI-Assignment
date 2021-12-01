@@ -56,6 +56,10 @@ export default function RequestTrip({passengersid}) {
     }
 
     async function getTrips() {
+        axios.get('http://localhost:5002/api/v1/trip/'+id)
+        .then(res => {
+            setTrips(res.data);
+            })
     }
 
 
@@ -131,7 +135,6 @@ export default function RequestTrip({passengersid}) {
                         <TableCell align="right">DropOffPostalCode</TableCell>
                         <TableCell align="right">TripStatus</TableCell>
                         <TableCell align="right">DateOfTrip</TableCell>
-                        <TableCell align="right">Accept</TableCell>
 
                     </TableRow>
                     </TableHead>
@@ -150,16 +153,19 @@ export default function RequestTrip({passengersid}) {
                         <TableCell align="right">{row.dropoffpostalcode}</TableCell>
                         <TableCell align="right">{row.tripstatus}</TableCell>
                         <TableCell align="right">{row.dateoftrip}</TableCell>
-                        <Button
-                            onClick={acceptTrip}  sx={{ mt: 3, mb: 2 }}>
-                            Accept
-                        </Button>
-
                         </TableRow>
                     )) : null}
                     </TableBody>
                 </Table>
             </TableContainer>
+            <Button
+                onClick={getTrips}
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+                >
+                Update
+            </Button>
 
     
     </div>)

@@ -41,7 +41,7 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 func getTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
-	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=?", id)
+	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=? ORDER BY DateofTrip DESC", id)
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
