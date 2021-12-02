@@ -2,9 +2,17 @@
 
 ## Design consideration
 
-### Separation of concerns for passenger and driver users
+### Architecture of microservices
 
-### Domain controller
+There are 3 microservices (Passenger, Driver and Trips). The Passenenger service will handle the creation and updating of passenger information. The Driver service will handle the creation and updating of driver information. The Trip service will handle the creation of trips and retrieving of trip information. These 3 services will have an MySQL database connected to fetch and store data. 
+
+### Separation of concerns for passenger and driver users
+It is best practices to allow each portion of the program to handle one portion of application logic. In this case, the choice to separate the passenger and driver was to allow each microservice to handle one set of logic. 
+
+### Component UI
+
+The use of component ui for reusability and 
+
 
 ## Architecture Diagram
 
