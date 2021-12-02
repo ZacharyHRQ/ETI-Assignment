@@ -40,7 +40,7 @@ export default function AcceptTrip({driversid}) {
             })
     }
 
-    async function acceptTrip(){
+    async function acceptTrip(id){
         const data = JSON.stringify({
             tripstatus : 1
         });
@@ -111,7 +111,7 @@ export default function AcceptTrip({driversid}) {
                         <TableCell align="right">{row.tripstatus}</TableCell>
                         <TableCell align="right">{row.dateoftrip}</TableCell>
                         <Button
-                            onClick={acceptTrip}  sx={{ mt: 3, mb: 2 }}>
+                            onClick={()=>{acceptTrip(row.tripid)}}  sx={{ mt: 3, mb: 2 }}>
                             Accept
                         </Button>
 

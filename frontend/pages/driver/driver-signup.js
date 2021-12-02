@@ -3,34 +3,41 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
+import { useRouter } from 'next/router'
 
 
 export default function DriverSignUp() {
+  const router = useRouter()
   
-    async function handleSubmit(event) {
-      event.preventDefault();
-      const data = new FormData(event.target);
-      const jsonString = JSON.stringify({
-        firstname: data.get("firstname"),
-        lastname: data.get("lastname"),
-        moblieno: data.get("moblieno"),
-        emailaddress: data.get("email"),
-        carlicenseno: data.get("carlicenseno"),
-      });
-      console.log(jsonString);
-      const res = await fetch('http://localhost:5001/api/v1/driver/createDriver', {
-        body : jsonString,
-        method : 'POST',
-        headers : {
-          'Content-Type' : 'application/json',
-        },
-        mode : 'no-cors',
-      })
-      console.log(await res.status);
-         
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const data = new FormData(event.target);
+    const jsonString = JSON.stringify({
+      firstname: data.get("firstname"),
+      lastname: data.get("lastname"),
+      moblieno: data.get("moblieno"),
+      emailaddress: data.get("email"),
+      carlicenseno: data.get("carlicenseno"),
+      identificationnumber: data.get("identificationnumber"),
+    });
+    console.log(jsonString);
+    const res = await fetch('http://localhost:5001/api/v1/driver/createDriver', {
+      body : jsonString,
+      method : 'POST',
+      headers : {
+        'Content-Type' : 'application/json',
+      },
+      mode : 'no-cors',
+    })
+    console.log(await res.status);
+    if (res.status === 0) {
+      alert("Creation Successfully");
+      router.push('/')
     }
+        
+  }
 
-    return (<div> 
+  return (<div> 
     
     <Container component="main" maxWidth="xs">
       <h1>Driver SignUp</h1>
@@ -80,7 +87,14 @@ export default function DriverSignUp() {
               label="Car License No"
               id="carlicense"
             />
-            
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="identificationnumber"
+              label="Identification Number"
+              id="identificationnumber"
+            />
             <Button
               type="submit"
               fullWidth

@@ -15,13 +15,14 @@ import (
 )
 
 type Driver struct {
-	DriverId     string `json:"driverid"`
-	FirstName    string `json:"firstname"`
-	LastName     string `json:"lastname"`
-	MoblieNo     string `json:"moblieno"`
-	EmailAddress string `json:"emailaddress"`
-	CarLicenseNo string `json:"carlicenseno"`
-	DriverStatus int    `json:"driverstatus"` // 1 means available , 0 means unavailable
+	DriverId             string `json:"driverid"`
+	FirstName            string `json:"firstname"`
+	LastName             string `json:"lastname"`
+	MoblieNo             string `json:"moblieno"`
+	EmailAddress         string `json:"emailaddress"`
+	CarLicenseNo         string `json:"carlicenseno"`
+	IdentificationNumber string `json:"identificationnumber"`
+	DriverStatus         int    `json:"driverstatus"` // 1 means available , 0 means unavailable
 }
 
 // middleware for setting header to json only
@@ -50,7 +51,7 @@ func getDrivers(db *sql.DB) (map[string]Driver, error) {
 	for rows.Next() {
 		var person Driver
 		if err := rows.Scan(&person.DriverId, &person.FirstName,
-			&person.LastName, &person.MoblieNo, &person.EmailAddress, &person.CarLicenseNo, &person.DriverStatus); err != nil {
+			&person.LastName, &person.MoblieNo, &person.EmailAddress, &person.CarLicenseNo, &person.IdentificationNumber, &person.DriverStatus); err != nil {
 			return nil, fmt.Errorf("%v", err)
 		}
 		pMap[person.DriverId] = person
@@ -63,31 +64,31 @@ func getDrivers(db *sql.DB) (map[string]Driver, error) {
 
 func allDrivers(w http.ResponseWriter, r *http.Request) {
 	// fetch driver map from db
-	fetchedPassengerData, _ := getDrivers(db)
+	fetchedDriverData, _ := getDrivers(db)
 	// fmt.Println(fetchedPassengerData)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(fetchedPassengerData)
+	json.NewEncoder(w).Encode(fetchedDriverData)
 
 }
 
 func getDriverById(w http.ResponseWriter, r *http.Request) {
 	// fetch driver map from db
 	params := mux.Vars(r)
-	fetchedPassengerData, _ := getDrivers(db)
-	fmt.Println(fetchedPassengerData)
+	fetchedDriverData, _ := getDrivers(db)
+	fmt.Println(fetchedDriverData)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(fetchedPassengerData[params["driverid"]])
+	json.NewEncoder(w).Encode(fetchedDriverData[params["driverid"]])
 
 }
 
-func insertDriver(db *sql.DB, fN, lN, mN, eA, cA string) {
-	stmt, err := db.Prepare("INSERT INTO Driver (FirstName, LastName, MoblieNo, EmailAddress, CarLicenseNo) VALUES (?,?,?,?,?)")
+func insertDriver(db *sql.DB, fN, lN, mN, eA, cA, iN string) {
+	stmt, err := db.Prepare("INSERT INTO Driver (FirstName, LastName, MoblieNo, EmailAddress, CarLicenseNo, IdentificationNumber) VALUES (?,?,?,?,?,?)")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(fN, lN, mN, eA, cA)
+	_, err = stmt.Exec(fN, lN, mN, eA, cA, iN)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -116,8 +117,7 @@ func createDriver(w http.ResponseWriter, r *http.Request) {
 		}
 		var driver Driver
 		json.Unmarshal(body, &driver)
-		fmt.Println(driver.CarLicenseNo)
-		insertDriver(db, driver.FirstName, driver.LastName, driver.MoblieNo, driver.EmailAddress, driver.CarLicenseNo)
+		insertDriver(db, driver.FirstName, driver.LastName, driver.MoblieNo, driver.EmailAddress, driver.CarLicenseNo, driver.IdentificationNumber)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(driver)
 	}
@@ -134,7 +134,6 @@ func updateDriver(w http.ResponseWriter, r *http.Request) {
 		}
 		var driver Driver
 		json.Unmarshal(body, &driver)
-		fmt.Println(driver)
 		editDriver(db, driver.FirstName, driver.LastName, driver.MoblieNo, driver.EmailAddress, driver.CarLicenseNo, params["driverid"])
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(driver)
@@ -174,7 +173,7 @@ func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
 	for rows.Next() {
 		var person Driver
 		if err := rows.Scan(&person.DriverId, &person.FirstName,
-			&person.LastName, &person.MoblieNo, &person.EmailAddress, &person.CarLicenseNo, &person.DriverStatus); err != nil {
+			&person.LastName, &person.MoblieNo, &person.EmailAddress, &person.CarLicenseNo, &person.IdentificationNumber, &person.DriverStatus); err != nil {
 			return nil, fmt.Errorf("%v", err)
 		}
 		pMap[person.DriverId] = person

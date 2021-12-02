@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
+import { useRouter } from 'next/router'
 
 
 export async function getStaticProps() {
@@ -18,6 +19,7 @@ export async function getStaticProps() {
 }
 
 export default function PassengerUpdate({driverids}) {
+    const router = useRouter()
     const [id, setid] = React.useState("");
     const [firstname, setfirstname] = React.useState("");
     const [lastname, setlastname] = React.useState("");
@@ -65,6 +67,10 @@ export default function PassengerUpdate({driverids}) {
           mode : 'no-cors',
         })
         console.log(res.status);
+        if (res.status === 0) {
+          alert("Update Successfully");
+          router.push('/')
+        }
       }
 
     return (<div> 
@@ -165,9 +171,7 @@ export default function PassengerUpdate({driverids}) {
             >
               Fetch Data
             </Button>
-    </Container>
-
-    
+    </Container>    
     </div>)
 
 }

@@ -41,7 +41,7 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 func getTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
-	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=? ORDER BY DateofTrip DESC", id)
+	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=? AND TripStatus=1 ORDER BY DateofTrip DESC", id)
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
@@ -213,7 +213,7 @@ func changeTripStatus(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			json.Unmarshal(reqBody, &newTrip)
 			tripId, _ := strconv.Atoi(params["tripid"])
-			fmt.Println(newTrip.TripStatus)
+			fmt.Println(newTrip.TripStatus, newTrip.TripId)
 			updateTripStatus(db, tripId, newTrip.TripStatus)
 			w.WriteHeader(http.StatusCreated)
 			w.Write([]byte("201 - Trip Status Updated: " +

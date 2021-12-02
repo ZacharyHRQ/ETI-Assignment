@@ -3,9 +3,11 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
+import { useRouter } from 'next/router'
 
 
 export default function PassengerSignUp() {
+  const router = useRouter()
   
     async function handleSubmit(event) {
       event.preventDefault();
@@ -26,6 +28,10 @@ export default function PassengerSignUp() {
         mode : 'no-cors',
       })
       console.log(await res.status);
+      if (res.status === 0){ 
+        alert("Creation Successfully");
+        router.push('/')
+      }
          
     }
 
