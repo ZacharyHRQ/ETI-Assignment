@@ -14,6 +14,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import { useEffect } from 'react';
 
 
 
@@ -33,12 +34,14 @@ export default function AcceptTrip({driversid}) {
         setid(event.target.value);
     }
 
-    const fetchTrips = () => {
-        axios.get('http://localhost:5002/api/v1/getCurrentTrips/'+id)
-        .then(res => {
-            setTrips(res.data);
+    useEffect(() => {
+        if (id) {
+            axios.get('http://localhost:5002/api/v1/getCurrentTrips/'+id)
+            .then(res => {
+                setTrips(res.data);
             })
-    }
+        }
+    }, [id]); 
 
     async function acceptTrip(id){
         const data = JSON.stringify({
@@ -121,14 +124,6 @@ export default function AcceptTrip({driversid}) {
                 </Table>
             </TableContainer>
 
-            <Button
-                onClick={fetchTrips}
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                >
-                Update
-            </Button>
         </Container>
 
         

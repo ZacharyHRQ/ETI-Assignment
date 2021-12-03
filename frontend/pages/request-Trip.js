@@ -14,6 +14,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import { useEffect } from 'react';
 
 
 export async function getStaticProps() {
@@ -29,6 +30,16 @@ export default function RequestTrip({passengersid}) {
     const [pickUpPostal, setpickUpPostal] = React.useState("");
     const [dropOffPostal, setdropOffPostal] = React.useState("");
     const [trips, setTrips] = React.useState([]);
+
+    useEffect(() => {
+      if(id){
+        axios.get('http://localhost:5002/api/v1/trip/'+id)
+        .then(res => {
+            setTrips(res.data);
+            })
+
+      }
+    }, [id]);
 
 
     const handleChange = (event) => {
@@ -54,14 +65,6 @@ export default function RequestTrip({passengersid}) {
         })
         console.log(res.status);
     }
-
-    async function getTrips() {
-        axios.get('http://localhost:5002/api/v1/trip/'+id)
-        .then(res => {
-            setTrips(res.data);
-            })
-    }
-
 
     return (<div> 
     
@@ -158,16 +161,7 @@ export default function RequestTrip({passengersid}) {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <Button
-                onClick={getTrips}
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                >
-                Update
-            </Button>
-
-    
+  
     </div>)
 
 }

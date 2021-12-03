@@ -8,6 +8,7 @@ import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import { useRouter } from 'next/router'
+import { useEffect } from 'react';
 
 
 export async function getStaticProps() {
@@ -18,7 +19,7 @@ export async function getStaticProps() {
   }
 }
 
-export default function PassengerUpdate({passengersid}) {
+export default function PassengerUpdate({passengersid}){
   const router = useRouter()
     const [id, setid] = React.useState("");
     const [firstname, setfirstname] = React.useState("");
@@ -31,18 +32,18 @@ export default function PassengerUpdate({passengersid}) {
       console.log(id);
     }
 
-
-    // parse json data to Object and update to fields
-    const handleClick = () => {
-      axios.get('http://localhost:5000/api/v1/passenger/'+id)
-      .then(res => {
-        const passenger = res.data;
-        setfirstname(passenger.firstname);
-        setlastname(passenger.lastname);
-        setmoblieno(passenger.moblieno);
-        setaddress(passenger.emailaddress);
-      })
-    }
+    useEffect(() => {
+      if (id !== "") {
+        axios.get('http://localhost:5000/api/v1/passenger/'+id)
+        .then(res => {
+          const passenger = res.data;
+          setfirstname(passenger.firstname);
+          setlastname(passenger.lastname);
+          setmoblieno(passenger.moblieno);
+          setaddress(passenger.emailaddress);
+        })
+      }
+    },[id]);
 
     async function handleSubmit(event) {
         event.preventDefault();
@@ -146,15 +147,6 @@ export default function PassengerUpdate({passengersid}) {
 
             
     </Box>
-
-    <Button
-              onClick={handleClick}
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Fetch Data
-            </Button>
     </Container>
 
     

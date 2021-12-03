@@ -8,6 +8,7 @@ import Select from '@mui/material/Select';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import { useRouter } from 'next/router'
+import { useEffect } from 'react';
 
 
 export async function getStaticProps() {
@@ -27,16 +28,9 @@ export default function PassengerUpdate({driverids}) {
     const [emailaddress, setaddress] = React.useState("");
     const [carlicense, setcarlicense] = React.useState("");
 
-
-    const handleChange = (event) => {
-      setid(event.target.value);
-      console.log(id);
-    }
-
-
-    // parse json data to Object and update to fields
-    const handleClick = () => {
-      axios.get('http://localhost:5001/api/v1/driver/'+id)
+    useEffect(() => {
+      if(id){
+        axios.get('http://localhost:5001/api/v1/driver/'+id)
       .then(res => {
         const driver = res.data;
         console.log(driver);
@@ -46,6 +40,13 @@ export default function PassengerUpdate({driverids}) {
         setaddress(driver.emailaddress);
         setcarlicense(driver.carlicenseno);
       })
+      }
+    }, [id]);
+
+
+    const handleChange = (event) => {
+      setid(event.target.value);
+      console.log(id);
     }
 
     async function handleSubmit(event) {
@@ -162,15 +163,6 @@ export default function PassengerUpdate({driverids}) {
 
             
     </Box>
-
-    <Button
-              onClick={handleClick}
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-            >
-              Fetch Data
-            </Button>
     </Container>    
     </div>)
 
