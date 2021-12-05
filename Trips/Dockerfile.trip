@@ -12,7 +12,7 @@ RUN go mod download
 
 COPY *.go ./
 
-RUN go build -o /passenger
+RUN go build -o /trip
 
 ##
 ## Deploy
@@ -21,8 +21,8 @@ RUN go build -o /passenger
 FROM gcr.io/distroless/base-debian10
 
 WORKDIR /
-COPY --from=build /passenger /passenger
-EXPOSE 5000
+COPY --from=build /trip /trip
+EXPOSE 5002
 USER nonroot:nonroot
 
-ENTRYPOINT ["/passenger"]
+ENTRYPOINT ["/trip"]

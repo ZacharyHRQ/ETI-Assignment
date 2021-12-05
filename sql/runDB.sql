@@ -1,3 +1,5 @@
+CREATE DATABASE IF NOT EXISTS Ridely;
+
 Use Ridely;
 
 Drop Table if exists Ridely.Trips;

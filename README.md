@@ -4,15 +4,15 @@
 
 ### Architecture of microservices
 
-There are 3 microservices (Passenger, Driver and Trips). The Passenenger service will handle the creation and updating of passenger information. The Driver service will handle the creation and updating of driver information. The Trip service will handle the creation of trips and retrieving of trip information. These 3 services will have an MySQL database connected to fetch and store data. 
+There are 3 microservices (Passenger, Driver and Trips). The Passenenger service will handle the creation and updating of passenger information. The Driver service will handle the creation and updating of driver information. The Trip service will handle the creation of trips and retrieving of trip information. These 3 services will have an MySQL database connected to fetch and store data.
 
 ### Separation of concerns for passenger and driver users
-It is best practices to allow each portion of the program to handle one portion of application logic. In this case, the choice to separate the passenger and driver was to allow each microservice to handle one set of logic. 
 
-### Component UI
+It is best practices to allow each portion of the program to handle one portion of application logic. In this case, the choice to separate the passenger and driver was to allow each microservice to handle one set of logic.
 
-The use of component ui for reusability and 
+### Why use reactjs
 
+Reactjs is a component based web framework which makes User interface resuable which is a good practice of Do not repeat yourself (DRY).
 
 ## Architecture Diagram
 
@@ -59,6 +59,7 @@ go run .
 #### Run frontend webapp on Port 3000
 
 ```bash
-cd frontend/nextjs-blog
+cd frontend
+npm install
 npm run dev
 ```
