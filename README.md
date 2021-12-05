@@ -8,7 +8,7 @@ There are 3 microservices (Passenger, Driver and Trips). The Passenenger service
 
 ### Separation of concerns for passenger and driver users
 
-It is best practices to allow each portion of the program to handle one portion of application logic. In this case, the choice to separate the passenger and driver was to allow each microservice to handle one set of logic.
+It is best practices to allow each portion of the program to handle one portion of application logic. In this case, the choice to separate the passenger and driver was to allow each microservice to handle one set of logic. In addition, this gives better isolation of logic which aids in maintainability as logic is associated to a particual domain.
 
 ### Why use reactjs
 
@@ -34,6 +34,8 @@ Reactjs is a component based web framework which makes User interface resuable w
 - Reactjs Frontend - 3000
 
 ### How to run
+
+Before running the services do remember to run the sql script (runDB.sql) located in sql folder
 
 #### Run Passenger service on Port 5000
 
