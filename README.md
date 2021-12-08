@@ -24,7 +24,7 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 
 | Name          | Description                    | type   |
 | ------------- | ------------------------------ | ------ |
-| Passengerid   | unique indentifer of passenger | string |
+| PassengerId   | unique indentifer of passenger | string |
 | First Name    | first name of passenger        | string |
 | Last Name     | last name of passenger         | string |
 | Moblie Number | moblie number of passenger     | string |
@@ -32,25 +32,38 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 
 > Driver struct
 
-| Name          | Description                    | type   |
-| ------------- | ------------------------------ | ------ |
-| Passengerid   | unique indentifer of passenger | string |
-| First Name    | first name of passenger        | string |
-| Last Name     | last name of passenger         | string |
-| Moblie Number | moblie number of passenger     | string |
-| email address | email address of passenger     | string |
+| Name                 | Description                                               | type   |
+| -------------------- | --------------------------------------------------------- | ------ |
+| DriverId             | unique indentifer of Driver                               | string |
+| First Name           | first name of Driver                                      | string |
+| Last Name            | last name of Driver                                       | string |
+| Moblie Number        | moblie number of Driver                                   | string |
+| email address        | email address of Driver                                   | string |
+| CarLicenseNo         | Car License Number of Driver                              | string |
+| IdentificationNumber | Identification Number of Driver                           | string |
+| DriverStatus         | status of driver , 1 means available, 0 means unavailable | int    |
 
 > Trip struct
 
-| Name          | Description                    | type   |
-| ------------- | ------------------------------ | ------ |
-| Passengerid   | unique indentifer of passenger | string |
-| First Name    | first name of passenger        | string |
-| Last Name     | last name of passenger         | string |
-| Moblie Number | moblie number of passenger     | string |
-| email address | email address of passenger     | string |
+| Name              | Description                                         | type      |
+| ----------------- | --------------------------------------------------- | --------- |
+| TripId            | unique indentifer of trip                           | string    |
+| PassengerId       | unique indentifer of passenger                      | string    |
+| DriverId          | unique indentifer of driver                         | string    |
+| PickUpPostalCode  | pick up location postal code                        | string    |
+| DropOffPostalCode | drop off location postal code                       | string    |
+| TripStatus        | status of trip , 1 means completed, 0 means pending | int       |
+| DateOfTrip        | timestamp of trip                                   | time.Time |
 
 ## Architecture Diagram
+
+![Architecture Diagram](https://github.com/ZacharyHRQ/ETI-Assignment/blob/main/Architecture.png)
+
+### Features
+
+> Passenger service
+
+#### Create Passenger
 
 ![Architecture Diagram](https://github.com/ZacharyHRQ/ETI-Assignment/blob/main/Architecture.png)
 
@@ -71,7 +84,7 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 
 ### How to run
 
-Before running the services do remember to run the sql script (runDB.sql) located in sql folder
+Before running the services do remember to run the runDB.sql sql script located in sql folder to load database.
 
 #### Run Passenger service on Port 5000
 
