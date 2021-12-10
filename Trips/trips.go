@@ -1,3 +1,10 @@
+/*
+	Trip service:
+		handle request trip by passenger
+		get all trips by passenger id
+		get all trips by driver id
+		change trip status
+*/
 package main
 
 import (

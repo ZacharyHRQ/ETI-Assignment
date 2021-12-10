@@ -1,3 +1,9 @@
+/*
+	Passenger service:
+		Create passenger
+		Update passenger
+*/
+
 package main
 
 import (
@@ -22,6 +28,13 @@ type Passenger struct {
 	EmailAddress string `json:"emailaddress"`
 }
 
+/*
+setting content type to application/json and access control to allow all origins due
+to cross origin resource sharing policy as request from fronted are blocked by the browser
+as both the frontend server and passenger server are running on different ports but on
+the same localhost.
+*/
+
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -35,6 +48,9 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", "Welcome to Passenger's service")
 }
 
+/*
+	gets all passengers from the db and returns a map of passenger ids and passenger objects
+*/
 func getPassengers(db *sql.DB) (map[string]Passenger, error) {
 	pMap := make(map[string]Passenger)
 
@@ -58,6 +74,9 @@ func getPassengers(db *sql.DB) (map[string]Passenger, error) {
 	return pMap, nil
 }
 
+/*
+	handler for route '/api/v1/passengers', return a map of all the passengers
+*/
 func allPassengers(w http.ResponseWriter, r *http.Request) {
 	// fetch passenger map from db
 	fetchedPassengerData, _ := getPassengers(db)
@@ -67,6 +86,9 @@ func allPassengers(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
+	handler for route '/api/v1/passenger/{passengerid}', returns the passenger by the {passengerid}
+*/
 func getPassengerById(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["passengerid"]
@@ -77,6 +99,9 @@ func getPassengerById(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fetchedPassengerData[id])
 }
 
+/*
+	handler for route '/api/v1/passengersid', returns an slice of all passengers id
+*/
 func getPassengerIds(w http.ResponseWriter, r *http.Request) {
 	pMap, _ := getPassengers(db)
 	ids := make([]string, len(pMap))
@@ -90,6 +115,9 @@ func getPassengerIds(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ids)
 }
 
+/*
+	inserting a new passenger into the db
+*/
 func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
 	// insert passenger into db
 	stmt, err := db.Prepare("INSERT INTO Passenger (FirstName, LastName, MoblieNo, EmailAddress) VALUES (?,?,?,?)")
@@ -105,6 +133,9 @@ func insertPassenger(db *sql.DB, fN, lN, mN, eA string) {
 
 }
 
+/*
+	updating an existing passenger in db
+*/
 func editPassenger(db *sql.DB, fN, lN, mN, eA, id string) {
 
 	stmt, err := db.Prepare("UPDATE Passenger SET FirstName=?, LastName=?, MoblieNo=?, EmailAddress=? WHERE PassengerId=?")
@@ -119,6 +150,9 @@ func editPassenger(db *sql.DB, fN, lN, mN, eA, id string) {
 	}
 }
 
+/*
+	handler for route '/api/v1/passengers/{passengerid}', return passenger object based on {passengerid}
+*/
 func passenger(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	pMap, _ := getPassengers(db)
@@ -140,6 +174,9 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+	handler for route '/api/v1/passenger/createPassenger', returns the created passenger object and status code of the request
+*/
 func createPassenger(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		// read the string sent to the service
@@ -164,6 +201,9 @@ func createPassenger(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
+	handler for route '/api/v1/passenger/updatePassenger/{passengerid}', returns status code of the request
+*/
 func updatePassenger(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if r.Method == "POST" {
@@ -205,14 +245,16 @@ func main() {
 	}
 	defer db.Close()
 
-	pingErr := db.Ping()
+	pingErr := db.Ping() // check if the connection is alive
 	if pingErr != nil {
 		log.Fatal(pingErr)
 	}
-	fmt.Println("Connected!")
+	fmt.Println("Connected!") // if connection is alive, print "Connected!"
 
 	router := mux.NewRouter()
 	router.Use(commonMiddleware) //setting context to "json" n cors error
+
+	// routes
 	router.HandleFunc("/", welcome)
 	router.HandleFunc("/api/v1/passengers", allPassengers).Methods(
 		"GET")
