@@ -6,7 +6,9 @@
 
 There are 3 microservices (Passenger, Driver and Trips). The Passenenger service will handle the creation and updating of passenger information. The Driver service will handle the creation and updating of driver information. The Trip service will handle the creation of trips and retrieving of trip information. These 3 services will have an MySQL database connected to fetch and store data.
 
-### Separation of concerns for passenger and driver users
+### Separation of concerns for passenger and driver
+
+As users are seperated by passenger and driver and each play their different roles, each passenger and driver should belong to different business domains. For example, a passenger is able to request a trip while a driver cannot.
 
 It is best practices to allow each portion of the program to handle one portion of application logic. In this case, the choice to separate the passenger and driver was to allow each microservice to handle one set of logic. In addition, this gives better isolation of logic which aids in maintainability as logic is associated to a particual domain.
 
@@ -28,7 +30,7 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 | First Name    | first name of passenger        | string |
 | Last Name     | last name of passenger         | string |
 | Moblie Number | moblie number of passenger     | string |
-| email address | email address of passenger     | string |
+| Email address | email address of passenger     | string |
 
 > Driver struct
 
@@ -38,7 +40,7 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 | First Name           | first name of Driver                                      | string |
 | Last Name            | last name of Driver                                       | string |
 | Moblie Number        | moblie number of Driver                                   | string |
-| email address        | email address of Driver                                   | string |
+| Email address        | email address of Driver                                   | string |
 | CarLicenseNo         | Car License Number of Driver                              | string |
 | IdentificationNumber | Identification Number of Driver                           | string |
 | DriverStatus         | status of driver , 1 means available, 0 means unavailable | int    |
@@ -59,19 +61,11 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 
 ![Architecture Diagram](https://github.com/ZacharyHRQ/ETI-Assignment/blob/main/Architecture.png)
 
-### Features
-
-> Passenger service
-
-#### Create Passenger
-
-![Architecture Diagram](https://github.com/ZacharyHRQ/ETI-Assignment/blob/main/Architecture.png)
-
 ## Instructions for setting up and running
 
 ### Prerequites
 
-- [NodeJs](https://nodejs.org/en/)
+- [NodeJs](https://nodejs.org/en/) (comes with npm)
 - Golang
 
 ### Ports used
@@ -81,10 +75,12 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 - Trips service - 5002
 
 - Reactjs Frontend - 3000
+- MySQL database - 3306
 
 ### How to run
 
 Before running the services do remember to run the runDB.sql sql script located in sql folder to load database.
+For each service, you would need to change into the respective directory from this project folder.
 
 #### Run Passenger service on Port 5000
 
