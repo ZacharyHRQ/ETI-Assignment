@@ -51,15 +51,15 @@ Reactjs is a component based web framework which makes User interface (UI) resua
 
 > Trip struct
 
-| Name              | Description                                         | type      |
-| ----------------- | --------------------------------------------------- | --------- |
-| TripId            | unique indentifer of trip                           | string    |
-| PassengerId       | unique indentifer of passenger                      | string    |
-| DriverId          | unique indentifer of driver                         | string    |
-| PickUpPostalCode  | pick up location postal code                        | string    |
-| DropOffPostalCode | drop off location postal code                       | string    |
-| TripStatus        | status of trip , 1 means completed, 0 means pending | int       |
-| DateOfTrip        | timestamp of trip                                   | time.Time |
+| Name              | Description                                                           | type      |
+| ----------------- | --------------------------------------------------------------------- | --------- |
+| TripId            | unique indentifer of trip                                             | string    |
+| PassengerId       | unique indentifer of passenger                                        | string    |
+| DriverId          | unique indentifer of driver                                           | string    |
+| PickUpPostalCode  | pick up location postal code                                          | string    |
+| DropOffPostalCode | drop off location postal code                                         | string    |
+| TripStatus        | status of trip , 2 means completed, 1 means accepted, 0 means pending | int       |
+| DateOfTrip        | timestamp of trip                                                     | time.Time |
 
 ## Architecture Diagram
 
