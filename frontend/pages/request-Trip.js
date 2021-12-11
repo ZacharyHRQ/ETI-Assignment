@@ -15,7 +15,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { useEffect } from 'react';
-
+import { useRouter } from 'next/router';
 
 export async function getStaticProps() {
   const res = await axios.get('http://localhost:5000/api/v1/passengersid/')
@@ -26,6 +26,7 @@ export async function getStaticProps() {
 }
 
 export default function RequestTrip({passengersid}) {
+    const router = useRouter()
     const [id, setid] = React.useState("");
     const [pickUpPostal, setpickUpPostal] = React.useState("");
     const [dropOffPostal, setdropOffPostal] = React.useState("");
@@ -64,6 +65,10 @@ export default function RequestTrip({passengersid}) {
           mode : 'no-cors',
         })
         console.log(res.status);
+        if (res.status === 0){ 
+          alert("Request Trip Successfully");
+          router.push('/')
+        }
     }
 
     return (<div> 

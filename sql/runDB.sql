@@ -26,9 +26,12 @@ INSERT INTO Driver (FirstName, LastName, MoblieNo, EmailAddress, CarLicenseNo, I
 
 Select * From Driver;
 
-CREATE TABLE Trips (TripId int PRIMARY KEY auto_increment, PassengerId int, DriverId int, PickUpPostalCode VARCHAR(6), DropOffPostalCode VARCHAR(6), TripStatus TINYINT(1) DEFAULT 1 , DateofTrip TIMESTAMP DEFAULT NOW()); 
+CREATE TABLE Trips (TripId int PRIMARY KEY auto_increment, PassengerId int, DriverId int, PickUpPostalCode VARCHAR(6), DropOffPostalCode VARCHAR(6), TripStatus TINYINT(1) DEFAULT 0 , DateofTrip TIMESTAMP DEFAULT NOW()); 
 
-INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,DateofTrip) VALUES ("1", "1", "999999","000000", NOW());
-
+INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,TripStatus,DateofTrip) VALUES ("4", "1", "999999","000000", 2, NOW());
+INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,TripStatus,DateofTrip) VALUES ("1", "2", "999993","000001", 2, NOW());
+INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,TripStatus,DateofTrip) VALUES ("1", "5", "999992","000002", 2, NOW());
+INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,TripStatus,DateofTrip) VALUES ("4", "2", "999991","000003", 2,NOW());
+INSERT INTO Trips (PassengerId,DriverId,PickUpPostalCode,DropOffPostalCode,TripStatus,DateofTrip) VALUES ("5", "4", "999990","000004", 2,NOW());
 
 Select * From Trips;

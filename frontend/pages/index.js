@@ -54,6 +54,13 @@ export default function Home() {
             <h3>Accept Trip &rarr;</h3>
             
           </a>
+          <a
+            href="http://localhost:3000/end-Trip"
+            className="card"
+          >
+            <h3>End Trip &rarr;</h3>
+            
+          </a>
         </div>
       </main>
 

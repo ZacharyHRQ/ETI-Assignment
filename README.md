@@ -16,6 +16,10 @@ It is best practices to allow each portion of the program to handle one portion 
 
 This service will used to store trip data and will act as a link between passenger and driver. Passenger will interact with this service to request for a trip as a result the trip service will call the driver service for a list of available driver to assign for this trip. The driver will then call the trip service to confirm that the driver has accepted the trip.
 
+### Database
+
+Due to the size of the project, every microservice will be sharing one mysql database. This is not one of the microservices best practices as it makes every service tight coupled. As each microservice should its own database, as it allows the service be technology agnostic and independent of other microservices.
+
 ### Why use reactjs
 
 Reactjs is a component based web framework which makes User interface (UI) resuable which is a good practice of Do not repeat yourself (DRY).

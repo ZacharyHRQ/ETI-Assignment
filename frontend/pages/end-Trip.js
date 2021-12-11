@@ -15,7 +15,9 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { useEffect } from 'react';
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/router';
+
+
 
 export async function getStaticProps() {
   const res = await axios.get('http://localhost:5001/api/v1/fetchAllIds')
@@ -26,10 +28,9 @@ export async function getStaticProps() {
 }
 
 export default function AcceptTrip({driversid}) {
+    const router = useRouter();
     const [id, setid] = React.useState("");
     const [trips, setTrips] = React.useState([]);
-    const router = useRouter()
-    
 
     const handleChange = (event) => {
         setid(event.target.value);
@@ -37,16 +38,16 @@ export default function AcceptTrip({driversid}) {
 
     useEffect(() => {
         if (id) {
-            axios.get('http://localhost:5002/api/v1/getPendingTrips/'+id)
+            axios.get('http://localhost:5002/api/v1/getAcceptedTrips/'+id)
             .then(res => {
                 setTrips(res.data);
             })
         }
     }, [id]); 
 
-    async function acceptTrip(id){
+    async function endTrip(id){
         const data = JSON.stringify({
-            tripstatus : 1
+            tripstatus : 2
         });
         const res = await fetch('http://localhost:5002/api/v1/changeStatus/'+id, { 
             method: 'POST',
@@ -57,10 +58,10 @@ export default function AcceptTrip({driversid}) {
             mode : 'no-cors',
         });
         console.log(res.status);
-        if(res.status === 0){
-            alert("Trip Accepted");
-            router.push('/');
-        }
+        if (res.status === 0){ 
+            alert("Ended Trip");
+            router.push('/')
+          }
     
     }
         
@@ -68,7 +69,7 @@ export default function AcceptTrip({driversid}) {
     return (
 
         <Container maxWidth="m">
-            <h1>Accept Trip</h1>
+            <h1>End Trip</h1>
 
             <InputLabel id="demo-simple-select-standard-label">Id</InputLabel>
             <Select
@@ -99,7 +100,7 @@ export default function AcceptTrip({driversid}) {
                         <TableCell align="right">DropOffPostalCode</TableCell>
                         <TableCell align="right">TripStatus</TableCell>
                         <TableCell align="right">DateOfTrip</TableCell>
-                        <TableCell align="right">Accept</TableCell>
+                        <TableCell align="right">End</TableCell>
 
                     </TableRow>
                     </TableHead>
@@ -119,8 +120,8 @@ export default function AcceptTrip({driversid}) {
                         <TableCell align="right">{row.tripstatus}</TableCell>
                         <TableCell align="right">{row.dateoftrip}</TableCell>
                         <Button
-                            onClick={()=>{acceptTrip(row.tripid)}}  sx={{ mt: 3, mb: 2 }}>
-                            Accept
+                            onClick={()=>{endTrip(row.tripid)}}  sx={{ mt: 3, mb: 2 }}>
+                            End
                         </Button>
 
                         </TableRow>

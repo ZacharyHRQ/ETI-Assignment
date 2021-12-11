@@ -29,7 +29,7 @@ type Trip struct {
 	DriverId          string    `json:"driverid"`
 	PickUpPostalCode  string    `json:"pickuppostalcode"`
 	DropOffPostalCode string    `json:"dropoffpostalcode"`
-	TripStatus        int       `json:"tripstatus"` // 0 - pending, 1 - completed
+	TripStatus        int       `json:"tripstatus"` // 0 - pending, 1 - accepted, 2 - completed
 	DateOfTrip        time.Time `json:"dateoftrip"`
 }
 
@@ -47,10 +47,10 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1>", "Welcome to Trip's service")
 }
 
-func getTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
+func getCompletedTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
-	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=? AND TripStatus=1 ORDER BY DateofTrip DESC", id)
+	rows, err := db.Query("SELECT * FROM Trips WHERE PassengerId=? AND TripStatus=2 ORDER BY DateofTrip DESC", id)
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
 	}
@@ -74,13 +74,13 @@ func getTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 
 func fetchPassengerTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fetchedTripData, _ := getTripsByPassengerId(db, params["passengerid"])
+	fetchedTripData, _ := getCompletedTripsByPassengerId(db, params["passengerid"])
 	// fmt.Print(fetchedTripData, err)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedTripData)
 }
 
-func getTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
+func getPendingTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
 	rows, err := db.Query("SELECT * FROM Trips WHERE DriverId=? AND TripStatus=0", id)
@@ -107,7 +107,40 @@ func getTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 
 func fetchDriverTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fetchedTripData, err := getTripsByDriverId(db, params["driverid"])
+	fetchedTripData, err := getPendingTripsByDriverId(db, params["driverid"])
+	fmt.Println(err)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(fetchedTripData)
+}
+
+func getAcceptedTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
+	var tArr []Trip
+
+	rows, err := db.Query("SELECT * FROM Trips WHERE DriverId=? AND TripStatus=1", id)
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var trip Trip
+		if err := rows.Scan(&trip.TripId, &trip.PassengerId, &trip.DriverId, &trip.PickUpPostalCode, &trip.DropOffPostalCode, &trip.TripStatus, &trip.DateOfTrip); err != nil {
+			return nil, fmt.Errorf("%v", err)
+		}
+		tArr = append(tArr, trip)
+		fmt.Println(tArr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+
+	return tArr, nil
+
+}
+
+func fetchDriverAcceptedTrips(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	fetchedTripData, err := getAcceptedTripsByDriverId(db, params["driverid"])
 	fmt.Println(err)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedTripData)
@@ -267,7 +300,9 @@ func main() {
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/trip/{passengerid}", fetchPassengerTrips).Methods(
 		"GET")
-	router.HandleFunc("/api/v1/getCurrentTrips/{driverid}", fetchDriverTrips).Methods(
+	router.HandleFunc("/api/v1/getPendingTrips/{driverid}", fetchDriverTrips).Methods(
+		"GET")
+	router.HandleFunc("/api/v1/getAcceptedTrips/{driverid}", fetchDriverAcceptedTrips).Methods(
 		"GET")
 	router.HandleFunc("/api/v1/request/{passengerid}", requestTrip).Methods(
 		"POST")
