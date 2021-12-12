@@ -33,7 +33,12 @@ type Trip struct {
 	DateOfTrip        time.Time `json:"dateoftrip"`
 }
 
-// middleware for setting header to json only
+/*
+setting content type to application/json and access control to allow all origins due
+to cross origin resource sharing policy as request from fronted are blocked by the browser
+as both the frontend server and passenger server are running on different ports but on
+the same localhost.
+*/
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -47,6 +52,9 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1>", "Welcome to Trip's service")
 }
 
+/*
+	fetch all completed trips by passenger id from db, returns a slice of trip object
+*/
 func getCompletedTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
@@ -72,14 +80,19 @@ func getCompletedTripsByPassengerId(db *sql.DB, id string) ([]Trip, error) {
 
 }
 
+/*
+	handler for route '/api/v1/trip/{passengerid}', return a slice of all completed trips by passenger id
+*/
 func fetchPassengerTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	fetchedTripData, _ := getCompletedTripsByPassengerId(db, params["passengerid"])
-	// fmt.Print(fetchedTripData, err)
+	fetchedTripData, _ := getCompletedTripsByPassengerId(db, params["passengerid"]) // fetch all completed trips by passenger id
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedTripData)
 }
 
+/*
+	fetching all pending trips by driver id from db, returns a slice of trip objects
+*/
 func getPendingTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
@@ -105,6 +118,9 @@ func getPendingTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 
 }
 
+/*
+	handler for route '/api/v1/getPendingTrips/{driverid}', return a slice of all pending trips by {driverid}
+*/
 func fetchDriverTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	fetchedTripData, err := getPendingTripsByDriverId(db, params["driverid"])
@@ -113,6 +129,9 @@ func fetchDriverTrips(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fetchedTripData)
 }
 
+/*
+	fetching all accepted trips by driver id from db, returns a slice of trip objects
+*/
 func getAcceptedTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 	var tArr []Trip
 
@@ -138,6 +157,9 @@ func getAcceptedTripsByDriverId(db *sql.DB, id string) ([]Trip, error) {
 
 }
 
+/*
+	handler for route '/api/v1/getAcceptedTrips/{driverid}', return a slice of all accepted trips by {driverid}
+*/
 func fetchDriverAcceptedTrips(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	fetchedTripData, err := getAcceptedTripsByDriverId(db, params["driverid"])
@@ -146,7 +168,9 @@ func fetchDriverAcceptedTrips(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fetchedTripData)
 }
 
-// request for trip
+/*
+	send a request to driver service to call for first available driver id
+*/
 func fetchFirstAvailableDriver() (driverId string, err error) {
 	// get driverid
 	const baseURL = "http://localhost:5001/api/v1/availabledrivers"
@@ -163,6 +187,9 @@ func fetchFirstAvailableDriver() (driverId string, err error) {
 	return drivers[0], nil
 }
 
+/*
+	send a request to driver service to update driverStatus
+*/
 func changeDriverStatus(driverid string, driverStatus int) (err error) {
 	// get all drivers
 	jsonValue, _ := json.Marshal(map[string]int{"driverstatus": driverStatus})
@@ -183,6 +210,9 @@ func changeDriverStatus(driverid string, driverStatus int) (err error) {
 	return nil
 }
 
+/*
+	fetch all pending trips from database, return a map of trip objects
+*/
 func getAllPendingTrips(db *sql.DB) (map[int]Trip, error) {
 	tMap := make(map[int]Trip)
 
@@ -205,6 +235,9 @@ func getAllPendingTrips(db *sql.DB) (map[int]Trip, error) {
 	return tMap, nil
 }
 
+/*
+	insert a new trip into database
+*/
 func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 	// insert into db
 	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus ) VALUES(?,?,?,?,?)")
@@ -222,6 +255,14 @@ func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 	return nil
 }
 
+/*
+	handler for route '/api/v1/request/{passengerid}'
+	calls driver service to get first available driver id as part of driver assignment
+	then createTrip function to insert a new trip into database
+	then calls driver service to update driver status to unavailable
+
+	returns http status of 201 if successful
+*/
 func requestTrip(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if r.Method == "POST" {
@@ -250,6 +291,9 @@ func requestTrip(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
+	update trip status of existing trip in database
+*/
 func updateTripStatus(db *sql.DB, tripId int, status int) (err error) {
 	stmt, err := db.Prepare("UPDATE Trips SET TripStatus=? WHERE TripId=?")
 	if err != nil {
@@ -266,6 +310,9 @@ func updateTripStatus(db *sql.DB, tripId int, status int) (err error) {
 	return nil
 }
 
+/*
+	handler for route '/api/v1/changeStatus/{tripid}', returns http status of 201 if successful
+*/
 func changeTripStatus(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if r.Method == "POST" {
@@ -290,6 +337,13 @@ func changeTripStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+	handler for route '/api/v1/endtrip/{tripid}'
+	calls driver service to get update driver to available
+	then updateTripStatus function to update trip status in database
+
+	returns http status of 201 if successful
+*/
 func endTrip(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	allTrips, _ := getAllPendingTrips(db)
