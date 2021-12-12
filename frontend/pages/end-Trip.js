@@ -49,7 +49,7 @@ export default function AcceptTrip({driversid}) {
         const data = JSON.stringify({
             tripstatus : 2
         });
-        const res = await fetch('http://localhost:5002/api/v1/changeStatus/'+id, { 
+        const res = await fetch('http://localhost:5002/api/v1/endtrip/'+id, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

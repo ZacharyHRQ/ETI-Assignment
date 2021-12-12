@@ -32,7 +32,12 @@ type Driver struct {
 	DriverStatus         int    `json:"driverstatus"` // 1 means available , 0 means unavailable
 }
 
-// middleware for setting header to json only
+/*
+setting content type to application/json and access control to allow all origins due
+to cross origin resource sharing policy as request from fronted are blocked by the browser
+as both the frontend server and passenger server are running on different ports but on
+the same localhost.
+*/
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -46,6 +51,9 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h1>%s</h1>", "Welcome to Driver's service")
 }
 
+/*
+	gets all driver from the db and returns a map of driver ids and driver objects
+*/
 func getDrivers(db *sql.DB) (map[string]Driver, error) {
 	pMap := make(map[string]Driver)
 
@@ -69,6 +77,9 @@ func getDrivers(db *sql.DB) (map[string]Driver, error) {
 	return pMap, nil
 }
 
+/*
+	handler for route '/api/v1/drivers', return a map of all the drivers
+*/
 func allDrivers(w http.ResponseWriter, r *http.Request) {
 	// fetch driver map from db
 	fetchedDriverData, _ := getDrivers(db)
@@ -78,16 +89,21 @@ func allDrivers(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
+	handler for route '/api/v1/drivers/{driverid}', return a driver object based on {driverid}
+*/
 func getDriverById(w http.ResponseWriter, r *http.Request) {
-	// fetch driver map from db
 	params := mux.Vars(r)
-	fetchedDriverData, _ := getDrivers(db)
+	fetchedDriverData, _ := getDrivers(db) // fetch driver map from db
 	fmt.Println(fetchedDriverData)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(fetchedDriverData[params["driverid"]])
 
 }
 
+/*
+	inserting a new driver into the db
+*/
 func insertDriver(db *sql.DB, fN, lN, mN, eA, cA, iN string) {
 	stmt, err := db.Prepare("INSERT INTO Driver (FirstName, LastName, MoblieNo, EmailAddress, CarLicenseNo, IdentificationNumber) VALUES (?,?,?,?,?,?)")
 	if err != nil {
@@ -101,6 +117,9 @@ func insertDriver(db *sql.DB, fN, lN, mN, eA, cA, iN string) {
 	}
 }
 
+/*
+	updating an existing driver in db
+*/
 func editDriver(db *sql.DB, fN, lN, mN, eA, cA, id string) {
 	stmt, err := db.Prepare("UPDATE Driver SET FirstName=?, LastName=?, MoblieNo=?, EmailAddress=?, CarLicenseNo=? WHERE DriverId=?")
 	if err != nil {
@@ -114,6 +133,9 @@ func editDriver(db *sql.DB, fN, lN, mN, eA, cA, id string) {
 	}
 }
 
+/*
+	handler for route '/api/v1/driver/createDriver', return the newly created driver object
+*/
 func createDriver(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		body, err := ioutil.ReadAll(r.Body)
@@ -130,6 +152,9 @@ func createDriver(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+	handler for route '/api/v1/updateDriver/{driverid}', return the http status code of operation
+*/
 func updateDriver(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if r.Method == "POST" {
@@ -147,6 +172,9 @@ func updateDriver(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+	handler for route '/api/v1/driver/{driverid}', return a map of all the passengers
+*/
 func getDriver(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	pMap, _ := getDrivers(db)
@@ -168,6 +196,9 @@ func getDriver(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+	gets all driver from the db and returns a map of driver ids whoo are available and driver objects
+*/
 func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
 	pMap := make(map[string]Driver)
 
@@ -191,8 +222,12 @@ func getAvailableDrivers(db *sql.DB) (map[string]Driver, error) {
 	return pMap, nil
 }
 
+/*
+	handler for route '/api/v1/availabledrivers', return a slice of driverids who are available
+*/
 func fetchAvailableDrivers(w http.ResponseWriter, r *http.Request) {
 	fetchedDriverData, _ := getAvailableDrivers(db)
+	// get keys from map
 	driverIds := make([]string, 0)
 	for k := range fetchedDriverData {
 		driverIds = append(driverIds, k)
@@ -202,6 +237,9 @@ func fetchAvailableDrivers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(driverIds)
 }
 
+/*
+	update status of driver in DB
+*/
 func updateDriverStatus(db *sql.DB, driverId string, status int) (err error) {
 	stmt, err := db.Prepare("UPDATE Driver SET DriverStatus=? WHERE DriverId=?")
 	if err != nil {
@@ -218,6 +256,9 @@ func updateDriverStatus(db *sql.DB, driverId string, status int) (err error) {
 	return nil
 }
 
+/*
+	handler for route '/api/v1/changeStatus/{driverid}', return a http status indicating the success of the operation.
+*/
 func changeDriverStatus(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if r.Header.Get("Content-type") == "application/json" {
@@ -226,7 +267,7 @@ func changeDriverStatus(w http.ResponseWriter, r *http.Request) {
 			reqBody, err := ioutil.ReadAll(r.Body)
 			if err == nil {
 				json.Unmarshal(reqBody, &newDriver)
-				updateDriverStatus(db, params["driverid"], newDriver.DriverStatus)
+				updateDriverStatus(db, params["driverid"], newDriver.DriverStatus) // updates the driver status
 				w.WriteHeader(http.StatusCreated)
 				w.Write([]byte("201 - Driver Status Updated: " +
 					params["driverid"]))
@@ -241,8 +282,12 @@ func changeDriverStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/*
+	handler for route '/api/v1/fetchAllIds', return a slice of all driverids
+*/
 func getDriverIds(w http.ResponseWriter, r *http.Request) {
 	dMap, _ := getDrivers(db)
+	// getting all keys from the map
 	driverIds := make([]string, 0)
 	for k := range dMap {
 		fmt.Println(k)
@@ -279,7 +324,7 @@ func main() {
 	fmt.Println("Connected!")
 
 	router := mux.NewRouter()
-	router.Use(commonMiddleware) //setting context to "json"
+	router.Use(commonMiddleware) // adding middleware to all routes
 	router.HandleFunc("/api/v1/", welcome)
 	router.HandleFunc("/api/v1/drivers", allDrivers).Methods(
 		"GET")

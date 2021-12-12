@@ -183,6 +183,28 @@ func changeDriverStatus(driverid string, driverStatus int) (err error) {
 	return nil
 }
 
+func getAllPendingTrips(db *sql.DB) (map[int]Trip, error) {
+	tMap := make(map[int]Trip)
+
+	rows, err := db.Query("SELECT * FROM Trips WHERE TripStatus=1")
+	if err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var trip Trip
+		if err := rows.Scan(&trip.TripId, &trip.DriverId, &trip.PassengerId, &trip.PickUpPostalCode, &trip.DropOffPostalCode, &trip.TripStatus, &trip.DateOfTrip); err != nil {
+			return nil, fmt.Errorf("%v", err)
+		}
+		tMap[trip.TripId] = trip
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+	return tMap, nil
+}
+
 func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 	// insert into db
 	stmt, err := db.Prepare("INSERT INTO Trips (PassengerId, DriverId, PickUpPostalCode, DropOffPostalCode, TripStatus ) VALUES(?,?,?,?,?)")
@@ -202,7 +224,6 @@ func createTrip(db *sql.DB, tripDetails Trip) (err error) {
 
 func requestTrip(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	// POST is for creating new trip
 	if r.Method == "POST" {
 		var newTrip Trip
 		fmt.Println(r.Body)
@@ -269,6 +290,34 @@ func changeTripStatus(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func endTrip(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	allTrips, _ := getAllPendingTrips(db)
+	if r.Method == "POST" {
+		var newTrip Trip
+		fmt.Println(r.Body)
+		reqBody, err := ioutil.ReadAll(r.Body)
+
+		if err == nil {
+			json.Unmarshal(reqBody, &newTrip)
+			tripId, _ := strconv.Atoi(params["tripid"])
+			driverId := allTrips[tripId].DriverId
+			fmt.Println(tripId, driverId)
+			changeDriverStatus(driverId, 1) // change to available
+			updateTripStatus(db, tripId, newTrip.TripStatus)
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte("201 - Trip added for passenger id: " +
+				params["passengerid"]))
+		} else {
+			w.WriteHeader(
+				http.StatusUnprocessableEntity)
+			w.Write([]byte("422 - Please supply trip information " +
+				"in JSON format"))
+		}
+	}
+
+}
+
 var db *sql.DB
 
 func main() {
@@ -307,6 +356,8 @@ func main() {
 	router.HandleFunc("/api/v1/request/{passengerid}", requestTrip).Methods(
 		"POST")
 	router.HandleFunc("/api/v1/changeStatus/{tripid}", changeTripStatus).Methods(
+		"POST")
+	router.HandleFunc("/api/v1/endtrip/{tripid}", endTrip).Methods(
 		"POST")
 
 	fmt.Println("Listening at port 5002")
