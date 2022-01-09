@@ -1,6 +1,67 @@
-version: '3.8'
+version: '3.9'
 
 services:
+
+  mysql:
+      image: mariadb:10.6.4-focal
+      restart: always
+      container_name: mysql
+      hostname: mysql
+      command: '--default-authentication-plugin=mysql_native_password'
+      environment:
+        MYSQL_USER: 'root'
+        MYSQL_PASSWORD: '123'
+        MYSQL_ROOT_PASSWORD: '123'
+        MYSQL_DATABASE: 'Ridely'
+      expose:
+        - 3306
+      volumes:
+        - ./sql/:/app
+      networks: 
+        - ridely
+
+  ridely-passenger:
+    depends_on:
+      - mysql
+    build: 
+      context: ./Passenger
+      dockerfile: Dockerfile.passenger
+    ports:
+      - 5000:5000
+    restart: always
+    volumes:
+      - ./Passenger/:/app
+    networks:
+      - ridely
+    
+  ridely-driver:
+    depends_on:
+      - mysql
+    build: 
+      context: ./Driver
+      dockerfile: Dockerfile.driver
+    ports:
+      - 5001:5001
+    restart: always
+    volumes:
+      - ./Driver/:/app
+    networks:
+      - ridely
+
+  ridely-trips:
+    depends_on:
+      - mysql
+    build: 
+      context: ./Trips
+      dockerfile: Dockerfile.trip
+    ports:
+      - 5002:5002
+    restart: always
+    volumes:
+      - ./Trips/:/app
+    networks:
+      - ridely
+
   ridely-frontend:
     depends_on:
       - ridely-passenger
@@ -8,72 +69,19 @@ services:
       - ridely-trips
     build: 
       context: ./frontend
-    image: ubotter/ridely-frontend:latest
-    container_name: nextjs-frontend
-    hostname: nextjs-frontend
+      dockerfile: Dockerfile.frontend
     ports:
       - 3000:3000
-
-  ridely-passenger:
-    depends_on:
-      - mysql
-    build: 
-      context: ./Passenger
-    image: ubotter/ridely-passenger:latest
-    container_name: ridely-passenger
-    hostname: ridely-passenger
-    ports:
-      - 5000:5000
-    environment:
-      - 'DB_PORT=6033'
-      - 'DB_HOST=ridely-mysql'
-    deploy:
-      restart_policy:
-        condition: on-failure
-  ridely-driver:
-    depends_on:
-      - mysql
-    build: 
-      context: ./Driver
-    image: ubotter/ridely-driver:latest
-    container_name: ridely-driver
-    hostname: ridely-driver
-    ports:
-      - 5001:5001
-    environment:
-      - 'DB_PORT=6033'
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-  ridely-trips:
-    depends_on:
-      - ridely-passenger
-      - ridely-driver
-    build: 
-      context: ./Trips
-    image: ubotter/ridely-trip:latest
-    container_name: ridely-trip
-    hostname: ridely-trip
-    ports:
-      - 5002:5002
-    environment:
-      - 'DB_PORT=6033'
-    deploy:
-      restart_policy:
-        condition: on-failure
-
-  mysql:
-    image: mysql/mysql-server:latest
-    restart: unless-stopped
-    container_name: mysql
-    environment:
-      - 'MYSQL_USER=root'
-      - 'MYSQL_PASSWORD=123'
-      - 'MYSQL_ROOT_PASSWORD:123'
-      - 'MYSQL_DATABASE:Ridely'
-    ports: 
-      - 3306:3306
+    volumes:
+      - ./frontend/:/app
+    command: npm run dev
+    networks:
+      - ridely
 
 volumes:
-  mysql: 
+  node_modules:
+
+networks:
+  ridely:
+    driver: bridge
+  

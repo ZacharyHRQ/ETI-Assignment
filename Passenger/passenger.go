@@ -231,11 +231,12 @@ var db *sql.DB
 func main() {
 	// setting up db connection
 	cfg := mysql.Config{
-		User:   "root",
-		Passwd: "123",
-		Net:    "tcp",
-		Addr:   "127.0.0.1:3306",
-		DBName: "Ridely",
+		User:                 "root",
+		Passwd:               "123",
+		Net:                  "tcp",
+		Addr:                 "mysql:3306",
+		DBName:               "Ridely",
+		AllowNativePasswords: true,
 	}
 	// Get a database handle.
 	var err error

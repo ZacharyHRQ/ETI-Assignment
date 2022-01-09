@@ -377,12 +377,13 @@ var db *sql.DB
 func main() {
 	// setting up db connection
 	cfg := mysql.Config{
-		User:      "root",
-		Passwd:    "123",
-		Net:       "tcp",
-		Addr:      "127.0.0.1:3306",
-		DBName:    "Ridely",
-		ParseTime: true, // to allow timestamp to parsed into time.Time object
+		User:                 "root",
+		Passwd:               "123",
+		Net:                  "tcp",
+		Addr:                 "mysql:3306",
+		DBName:               "Ridely",
+		AllowNativePasswords: true,
+		ParseTime:            true, // to allow timestamp to parsed into time.Time object
 	}
 	// Get a database handle.
 	var err error
