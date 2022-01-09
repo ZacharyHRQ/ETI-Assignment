@@ -18,7 +18,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 export async function getStaticProps() {
-  const res = await axios.get('http://localhost:5000/api/v1/passengersid/')
+  const res = await axios.get('http://passenger:5000/api/v1/passengersid/')
   const passengersid = await res.data;
   return {
     props: { passengersid }
@@ -34,7 +34,7 @@ export default function RequestTrip({passengersid}) {
 
     useEffect(() => {
       if(id){
-        axios.get('http://localhost:5002/api/v1/trip/'+id)
+        axios.get('http://trip:5002/api/v1/trip/'+id)
         .then(res => {
             setTrips(res.data);
             })
@@ -55,7 +55,7 @@ export default function RequestTrip({passengersid}) {
             dropoffpostalcode : dropOffPostal,
         });
         console.log(jsonString);
-        const res = await fetch('http://localhost:5002/api/v1/request/'+id, {
+        const res = await fetch('http://trip:5002/api/v1/request/'+id, {
           body : jsonString,
           method : 'POST',
           headers : {

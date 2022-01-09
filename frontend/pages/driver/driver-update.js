@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 
 
 export async function getStaticProps() {
-  const res = await axios.get('http://localhost:5001/api/v1/fetchAllIds')
+  const res = await axios.get('http://driver:5001/api/v1/fetchAllIds')
   const driverids = await res.data;
   return {
     props: { driverids }

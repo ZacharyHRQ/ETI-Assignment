@@ -21,7 +21,7 @@ export default function DriverSignUp() {
       identificationnumber: data.get("identificationnumber"),
     });
     console.log(jsonString);
-    const res = await fetch('http://localhost:5001/api/v1/driver/createDriver', {
+    const res = await fetch('http://driver:5001/api/v1/driver/createDriver', {
       body : jsonString,
       method : 'POST',
       headers : {

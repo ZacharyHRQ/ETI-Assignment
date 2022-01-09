@@ -16,7 +16,7 @@ services:
       expose:
         - 3306
       volumes:
-        - ./sql/:/app
+        - ./sql/runDB.sql:/docker-entrypoint-initdb.d/1-runDB.sql
       networks: 
         - ridely
 
@@ -26,6 +26,9 @@ services:
     build: 
       context: ./Passenger
       dockerfile: Dockerfile.passenger
+    hostname: passenger
+    expose:
+      - 5000
     ports:
       - 5000:5000
     restart: always
@@ -40,6 +43,7 @@ services:
     build: 
       context: ./Driver
       dockerfile: Dockerfile.driver
+    hostname: driver
     ports:
       - 5001:5001
     restart: always
@@ -54,6 +58,7 @@ services:
     build: 
       context: ./Trips
       dockerfile: Dockerfile.trip
+    hostname: trip
     ports:
       - 5002:5002
     restart: always

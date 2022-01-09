@@ -19,7 +19,7 @@ export default function PassengerSignUp() {
         emailaddress: data.get("email"),
       });
       console.log(jsonString);
-      const res = await fetch('http://localhost:5000/api/v1/passenger/createPassenger', {
+      const res = await fetch('http://passenger:5000/api/v1/passenger/createPassenger', {
         body : jsonString,
         method : 'POST',
         headers : {
