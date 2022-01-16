@@ -1,4 +1,5 @@
-GRANT ALL ON *.* TO 'root'@'localhost';
+CREATE USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('root');
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost';
 
 CREATE DATABASE IF NOT EXISTS Ridely;
 

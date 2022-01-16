@@ -13,10 +13,11 @@ services:
       MYSQL_PASSWORD: '123'
       MYSQL_ROOT_PASSWORD: '123'
       MYSQL_DATABASE: 'Ridely'
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
     expose:
       - 3306
     volumes:
-      - ./sql/:/docker-entrypoint-initdb.d/
+      - ./sql/:/docker-entrypoint-initdb.d
     networks: 
       - ridely
 
@@ -29,6 +30,8 @@ services:
     hostname: passenger
     expose:
       - 5000
+    ports:
+      - 5000:5000
     links: 
       - mysql
     restart: always

@@ -37,7 +37,7 @@ export default function AcceptTrip({driversid}) {
 
     useEffect(() => {
         if (id) {
-            axios.get('http://trip:5002/api/v1/getPendingTrips/'+id)
+            axios.get('http://localhost:5002/api/v1/getPendingTrips/'+id)
             .then(res => {
                 setTrips(res.data);
             })
@@ -48,7 +48,7 @@ export default function AcceptTrip({driversid}) {
         const data = JSON.stringify({
             tripstatus : 1
         });
-        const res = await fetch('http://trip:5002/api/v1/changeStatus/'+id, { 
+        const res = await fetch('http://localhost:5002/api/v1/changeStatus/'+id, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

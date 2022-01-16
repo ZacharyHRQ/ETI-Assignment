@@ -21,26 +21,28 @@ export default function PassengerSignUp() {
         emailaddress: data.get("email"),
       });
       console.log(jsonString);
-      // const res = await fetch('http://ridely-passenger:5000/api/v1/passenger/createPassenger', {
-      //   body : jsonString,
-      //   method : 'POST',
-      //   headers : {
-      //     'Content-Type' : 'application/json',
-      //   },
-      //   mode : 'no-cors',
-      // })
-      // const response = await res.json();
-      // console.log(response);
-      // router.push('/');
-      axios.post("http://passenger/api/v1/passenger/createPassenger", 
-        jsonString)
-      .then(function (response) {
-        console.log()
-        response.status === 200 ? router.push('/') : console.log(response.status);
+      const res = await fetch('http://localhost:5000/api/v1/passenger/createPassenger', {
+        body : jsonString,
+        method : 'POST',
+        headers : {
+          'Content-Type' : 'application/json',
+        },
+        mode : 'no-cors',
       })
-      .catch(function (error) {
-        console.log(error);
-      });
+      console.log(await res.status);
+      if (res.status === 0){ 
+        alert("Creation Successfully");
+        router.push('/')
+      }
+      // axios.post("http://passenger:5000/api/v1/passenger/createPassenger", 
+      //   jsonString)
+      // .then(function (response) {
+      //   console.log()
+      //   response.status === 200 ? router.push('/') : console.log(response.status);
+      // })
+      // .catch(function (error) {
+      //   console.log(error);
+      // });
          
     }
 

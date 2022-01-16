@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 
 
 export async function getStaticProps() {
-  const res = await axios.get('http://ridely-passenger:5000/api/v1/passengersid/')
+  const res = await axios.get('http://passenger:5000/api/v1/passengersid/')
   const passengersid = await res.data;
   return {
     props: { passengersid }
@@ -34,7 +34,7 @@ export default function PassengerUpdate({passengersid}){
 
     useEffect(() => {
       if (id !== "") {
-        axios.get('http://passenger:5000/api/v1/passenger/'+id)
+        axios.get('http://localhost:5000/api/v1/passenger/'+id)
         .then(res => {
           const passenger = res.data;
           setfirstname(passenger.firstname);
@@ -54,7 +54,7 @@ export default function PassengerUpdate({passengersid}){
           emailaddress: emailaddress,
         });
         console.log(jsonString);
-        const res = await fetch('http://passenger:5000/api/v1/passenger/updatePassenger/'+id, {
+        const res = await fetch('http://localhost:5000/api/v1/passenger/updatePassenger/'+id, {
           body : jsonString,
           method : 'POST',
           headers : {
