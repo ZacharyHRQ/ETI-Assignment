@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/rs/cors"
 )
 
 type Passenger struct {
@@ -38,8 +39,6 @@ the same localhost.
 func commonMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -269,7 +268,10 @@ func main() {
 		"POST")
 	router.HandleFunc("/api/v1/passenger/updatePassenger/{passengerid}", updatePassenger).Methods(
 		"POST")
+
+	handler := cors.AllowAll().Handler(router)
+
 	fmt.Println("Listening at port 5000")
-	log.Fatal(http.ListenAndServe(":5000", router))
+	log.Fatal(http.ListenAndServe(":5000", handler))
 
 }

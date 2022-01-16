@@ -1,3 +1,5 @@
+GRANT ALL ON *.* TO 'root'@'localhost';
+
 CREATE DATABASE IF NOT EXISTS Ridely;
 
 Use Ridely;
